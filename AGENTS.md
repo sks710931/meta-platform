@@ -45,6 +45,7 @@ Hard rules for every change. Product behavior lives elsewhere. These rules are a
 - No commented-out code. No new TODO without an owner and a reason.
 - Secrets, tokens, and local env files are never committed.
 - Generated code is regenerated, not hand-edited.
+- Before concluding a repository task, commit its changes and push the current branch. Preserve unrelated changes, never force push, and report any commit or push blocker.
 - If a rule in this file conflicts with a one-off shortcut, the rule wins.
 
 ## Platform architecture (cross-cutting bootstrap)
@@ -64,4 +65,4 @@ Hard rules for every change. Product behavior lives elsewhere. These rules are a
 - React uses strict TypeScript. Do not relax compiler checks to make builds pass.
 - Keep smoke tests intentionally small. Add tests for critical rules, security, billing, state transitions, and high-risk logic. No trivial property tests, coverage targets, large mocked suites, or integration/E2E suites in this iteration.
 - Validate with `dotnet build WhatsAppPlatform.slnx`, `dotnet test WhatsAppPlatform.slnx --no-build`, client `npm run build`, and `docker compose --env-file .env.example config --quiet`.
-- Do not implement Organization CRUD, Meta APIs, or WhatsApp functionality as part of the bootstrap.
+- Organizations supports create/list/details. WhatsApp Accounts supports onboarding records and Development-only manual result registration. Do not expand to Organization update/delete, identity, Meta integration, credit-line assignment, billing, sending, or webhooks without authorization.

@@ -1,6 +1,6 @@
 # Architecture
 
-This is a cross-cutting architecture bootstrap, with no business use cases or external integrations.
+The bootstrap is complete. Organizations implements create/list/details; WhatsApp Accounts now implements local onboarding sessions and account persistence, with no external integrations.
 
 ## Why a modular monolith
 
@@ -26,8 +26,8 @@ flowchart TD
 - **API**: request parsing, HTTP responses, and dependency composition. Its Infrastructure reference wires implementations; controllers/handlers must not contain business rules.
 - **React**: delivery/UI code within `src/WhatsAppPlatform.Api/ClientApp`. Strict TypeScript; no business rules duplicated in components.
 
-Context folders exist in Domain and Application. Application intentionally has no handlers
-or DI abstraction to register yet. A future slice might live under
+Context folders exist in Domain and Application. Organizations now has three handlers and
+one purpose-specific persistence port, `IOrganizationStore`, implemented by `EfOrganizationStore`. A future slice might live under
 `Application/Organizations/<UseCase>/`, with one file per command, handler, or validator.
 HTTP and persistence code for that slice stay in their corresponding outer layers.
 There is no generic repository or generic unit-of-work wrapper around EF Core.
@@ -37,15 +37,15 @@ There is no generic repository or generic unit-of-work wrapper around EF Core.
 | Context | PostgreSQL schema | Responsibility |
 | --- | --- | --- |
 | Organizations | `organizations` | Customer/tenant identity and lifecycle; organization metadata |
-| WhatsApp Accounts | `whatsapp` | Connected WhatsApp Business accounts and their WhatsApp-enabled phone numbers |
-| Messaging | `messaging` | Messaging/payment account identity and future messaging lifecycle/use cases |
+| WhatsApp Accounts | `whatsapp` | Connected business accounts, messaging/payment metadata, phone records, and onboarding sessions |
+| Messaging | `messaging` | Future message-sending lifecycle/use cases; connected payment-account metadata lives in WhatsApp Accounts |
 | Billing | `billing` | Partner credit-line assignments, Meta usage/liabilities, customer pricing/charges/receivables, reconciliation |
 | Identity | `identity` | Platform user identity, authentication, memberships, roles, tenant authorization |
 | Platform Administration | `platform` | Operator administration, platform configuration and partner setup |
 
 One physical database is used. `database/init-schemas.sql` reserves all six schemas on
-initial local database creation; there are no business tables yet. `PlatformDbContext`
-is registered scoped using Npgsql. Its empty model is deliberate. The migration history
+initial local database creation. `organizations.organizations` is the first business table,
+created by an explicit EF migration. `PlatformDbContext` is registered scoped using Npgsql. The migration history
 belongs to `platform`; future entity configurations explicitly call `ToTable` with the
 owning schema rather than relying on the default. One migration stream initially
 coordinates deployment; contexts still own their table mappings and data changes.
@@ -55,8 +55,10 @@ Docker initialization script. No startup `EnsureCreated` or automatic migrations
 Schema separation is ownership, not a security or tenant-isolation mechanism. The local
 Compose user is a development database owner. Production needs separate least-privilege
 runtime/migration roles, secret management, TLS, backups, and reviewed migration deployment.
-Tenant filtering and authorization must be added with the first tenant-scoped feature.
-No such query or public business endpoint exists in this bootstrap.
+The Organization catalog is deliberately global and unauthenticated in this iteration.
+Identity, authorization, and tenant isolation are outside the requested scope. Do not deploy
+these endpoints to an untrusted network until access control is designed. Future tenant-owned
+data must filter by `OrganizationId`; the root Organization lookup itself filters by its ID.
 
 Contexts reference the shared public `Organizations.Contracts.OrganizationId` type.
 They may import another context's explicit contracts, never its implementation internals.
@@ -71,7 +73,7 @@ Internal IDs are immutable sealed records containing nonempty GUIDs. They provid
 equality and distinct compile-time types. A constructor rejects an empty ID as a programming
 error; future HTTP boundaries must validate untrusted values and return expected failures
 before domain construction. No factories hide random GUID generation or introduce a clock.
-Future EF mappings convert each ID explicitly to PostgreSQL `uuid`.
+The Organization mapping converts its ID explicitly to PostgreSQL `uuid`; future IDs follow the same rule.
 
 A Meta WABA ID, messaging/payment entity ID, phone-number ID, or credit-line ID is an
 external identifier with its own provider meaning. Map Meta wire DTOs to internal
@@ -82,7 +84,9 @@ confirmed with the relevant Meta contract when integrations are implemented.
 Persist timestamps as UTC `DateTimeOffset` using PostgreSQL `timestamp with time zone`.
 Inject clocks into time-dependent domain behavior. Money is integer minor units with an
 explicit currency; no float arithmetic. Async APIs accept and propagate `CancellationToken`.
-No timestamped entities, money primitives, or async application APIs are needed yet.
+Organization creation uses an injected `TimeProvider` in Application, with UTC millisecond
+precision for stable PostgreSQL response roundtrips. Domain accepts an explicit UTC timestamp.
+There are no money primitives or other business APIs yet.
 
 ## Hosting
 
@@ -95,14 +99,68 @@ process liveness only; it does not assert database connectivity or business read
 For interactive UI work, Vite proxies `/api` and `/health` to the local ASP.NET host.
 Production serves both from one origin; no permissive CORS configuration is introduced.
 The local host binds loopback. Configure allowed hosts and HTTPS termination explicitly
-for deployment; authentication and tenant enforcement must precede business endpoints.
+for deployment; authentication and tenant enforcement are required before untrusted access.
 
 ## Validation boundaries
 
-The three unit smoke tests cover nonempty internal IDs, ID equality/type isolation, and
+The three existing unit smoke tests cover nonempty internal IDs, ID equality/type isolation, and
 scoped Npgsql DbContext registration. They open no database connections, use no mocks,
 and are fast and deterministic. Manual local HTTP and PostgreSQL checks validate bootstrap
 wiring without adding an integration/E2E test suite. There is no coverage target.
 
 Future unit tests focus on high-risk business rules, security-sensitive behavior, billing
 calculations, and state transitions. Do not test framework internals or trivial accessors.
+
+## Organizations implementation
+
+- `Domain/Organizations/Organization` owns normalization, name validation, initial Active status, and UTC time validation. Expected creation failures return a context-specific result.
+- Application slices create a typed internal ID, use the injected clock, and return `OrganizationResponse` contracts. Details returns a typed not-found outcome.
+- `IOrganizationStore` contains only add, deterministic list, and ID lookup. No EF type appears in Application or HTTP contracts.
+- Infrastructure owns explicit column mapping, constraints, a newest-first `(created_at DESC, id DESC)` index, and the migration/design-time factory.
+- API maps POST/create and GET/list/details; invalid payloads and IDs are 400, missing roots 404, creation 201 with Location. Unexpected errors are generic Problem Details, with diagnostics confined to server logs.
+- React implements list/create/details views, validates API payloads as unknown input, and handles cancellation, loading, validation failures, server failures, and successful creation.
+- Listing is intentionally unpaginated and names need not be unique. Pagination, idempotency, access control, updates, and deletion are not implemented.
+- Four domain test methods add eight cases for normalization/default status/UTC time, invalid names, maximum length, and non-UTC rejection. No integration-test framework was introduced.
+
+## WhatsApp Accounts slice
+
+The owning context contains small account/session aggregates and independent messaging/phone
+records. Organizations is referenced by its public ID and application persistence contract
+for existence checks. No Organization aggregate code or collections changed. Infrastructure's
+shared PlatformDbContext supplies the cross-cutting relational FK bridge to Organizations;
+this is database composition, not cross-context business behavior or an EF navigation graph.
+The one physical database still has one migration stream/model snapshot, so the existing
+snapshot location is retained when adding the WhatsApp migration.
+
+Application coordinates StartOnboardingSession, GetOnboardingSession, RegisterOnboardingResult,
+ListWhatsAppAccounts, and GetWhatsAppAccount. IWhatsAppAccountStore is a context-specific port,
+not a generic repository. Graph reads are no-tracking and batched; list queries filter by
+OrganizationId and sort CreatedAt/Id descending. Detail/session routes are globally addressed
+as requested; authentication and ownership authorization remain future work.
+
+Registration validates typed external IDs and 1–100 distinct phones, completes the domain
+session, then persists the account, messaging/phone rows, and session update in one EF
+SaveChanges transaction. Status is an optimistic concurrency token. Unique constraints are
+the final integrity boundary; rollback clears failed tracking before checking for an existing
+successful registration. Identical callbacks (including reordered phones/normalized whitespace)
+return the existing account. Conflicting callbacks return 409; expired sessions return 410.
+
+The completion HTTP contract is **temporary scaffolding**, mapped only in Development.
+Session responses expose a runtime manualCompletionAvailable flag so built React assets do
+not show a manual form in Production. Unknown completion fields are rejected, and DTOs have
+no credential fields. No Meta HTTP adapter, SDK, embedded browser signup, or secret storage
+exists. Replace this route with a trusted real Embedded Signup adapter later; do not treat
+simulation data as proof of a real connection. Other endpoints retain the current unauthenticated
+scope and require access control before untrusted deployment.
+
+Session lifetime defaults to 15 minutes via WhatsAppOnboarding:SessionLifetimeMinutes and is
+validated between 1 and 1440 minutes. TimeProvider remains injected; generated timestamps use
+UTC millisecond precision. The minimal UI adds account/phone state and session/manual controls
+to Organization details without introducing a design system or routing dependency.
+
+Nine focused domain test methods add ten cases for session lifecycle, UTC time, account
+creation/ownership, and external-ID validation. The existing ID smoke test also checks the
+new session ID. One standalone Python smoke script exercises persistence, replay/concurrency,
+uniqueness rollback, tenant list separation, malformed input, and credential-field rejection
+against an empty isolated database. It uses only the standard library; no new integration
+framework or coverage target is introduced.

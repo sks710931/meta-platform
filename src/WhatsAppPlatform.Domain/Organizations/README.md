@@ -1,3 +1,3 @@
 # Organizations
 
-Own domain rules and small aggregates for this bounded context. Expose cross-context types only through `Contracts/`. No framework or external API dependencies.
+Organization is a small immutable tenant root with a typed ID, normalized name, status, and UTC creation time. Creation returns explicit validation failures. Other contexts reference only its public ID contract.

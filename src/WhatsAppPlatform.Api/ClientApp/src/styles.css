@@ -10,3 +10,11 @@ main {
   margin: 4rem auto;
   padding: 2rem;
 }
+
+button, input { font: inherit; padding: 0.4rem; margin: 0.3rem; }
+label { display: block; }
+table { width: 100%; margin-top: 1rem; border-collapse: collapse; }
+th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid #c7d2cf; }
+dt { font-weight: bold; margin-top: 0.8rem; }
+dd { margin: 0.3rem 0; overflow-wrap: anywhere; }
+[role="alert"] { color: #9b1c1c; }

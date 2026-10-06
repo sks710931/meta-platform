@@ -1,4 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using WhatsAppPlatform.Application.WhatsAppAccounts.Contracts;
+using WhatsAppPlatform.Infrastructure.WhatsAppAccounts;
+using WhatsAppPlatform.Application.Organizations.Contracts;
+using WhatsAppPlatform.Infrastructure.Organizations;
 using Microsoft.Extensions.DependencyInjection;
 using WhatsAppPlatform.Infrastructure.Persistence;
 
@@ -14,6 +18,8 @@ public static class DependencyInjection
         services.AddDbContext<PlatformDbContext>(options => options.UseNpgsql(
             connectionString,
             postgres => postgres.MigrationsHistoryTable("__EFMigrationsHistory", DatabaseSchemas.Platform)));
+        services.AddScoped<IOrganizationStore, EfOrganizationStore>();
+        services.AddScoped<IWhatsAppAccountStore, EfWhatsAppAccountStore>();
         return services;
     }
 }

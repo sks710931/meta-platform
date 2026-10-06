@@ -1,3 +1,3 @@
-# WhatsAppAccounts
+# WhatsApp Accounts
 
-Own domain rules and small aggregates for this bounded context. Expose cross-context types only through `Contracts/`. No framework or external API dependencies.
+Owns the account/session aggregates, messaging/payment identity, and phone records. Organizations is referenced by typed ID only. Typed external IDs are distinct from internal UUIDs; no Graph transport DTO or credential fields enter Domain.

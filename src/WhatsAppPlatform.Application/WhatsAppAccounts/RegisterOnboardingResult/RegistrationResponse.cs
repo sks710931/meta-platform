@@ -1,0 +1,5 @@
+using WhatsAppPlatform.Application.WhatsAppAccounts.Contracts;
+
+namespace WhatsAppPlatform.Application.WhatsAppAccounts.RegisterOnboardingResult;
+
+public sealed record RegistrationResponse(OnboardingSessionResponse Session, WhatsAppAccountResponse Account, bool AlreadyCompleted);

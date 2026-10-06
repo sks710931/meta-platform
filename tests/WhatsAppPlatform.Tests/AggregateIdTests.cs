@@ -13,6 +13,7 @@ public sealed class AggregateIdTests
     {
         Assert.Throws<ArgumentException>(() => new OrganizationId(Guid.Empty));
         Assert.Throws<ArgumentException>(() => new WhatsAppAccountId(Guid.Empty));
+        Assert.Throws<ArgumentException>(() => new EmbeddedSignupSessionId(Guid.Empty));
         Assert.Throws<ArgumentException>(() => new MessagingAccountId(Guid.Empty));
         Assert.Throws<ArgumentException>(() => new PhoneNumberId(Guid.Empty));
         Assert.Throws<ArgumentException>(() => new CreditLineAssignmentId(Guid.Empty));

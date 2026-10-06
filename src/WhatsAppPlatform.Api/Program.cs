@@ -1,4 +1,14 @@
 using WhatsAppPlatform.Infrastructure;
+using WhatsAppPlatform.Api.WhatsAppAccounts;
+using WhatsAppPlatform.Application.WhatsAppAccounts.StartOnboardingSession;
+using WhatsAppPlatform.Application.WhatsAppAccounts.GetOnboardingSession;
+using WhatsAppPlatform.Application.WhatsAppAccounts.RegisterOnboardingResult;
+using WhatsAppPlatform.Application.WhatsAppAccounts.ListWhatsAppAccounts;
+using WhatsAppPlatform.Application.WhatsAppAccounts.GetWhatsAppAccount;
+using WhatsAppPlatform.Api.Organizations;
+using WhatsAppPlatform.Application.Organizations.CreateOrganization;
+using WhatsAppPlatform.Application.Organizations.ListOrganizations;
+using WhatsAppPlatform.Application.Organizations.GetOrganizationDetails;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("Platform")
@@ -6,12 +16,34 @@ var connectionString = builder.Configuration.GetConnectionString("Platform")
 
 builder.Services.AddInfrastructure(connectionString);
 builder.Services.AddProblemDetails();
+builder.Services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadRequest = false);
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<CreateOrganizationHandler>();
+builder.Services.AddScoped<ListOrganizationsHandler>();
+builder.Services.AddScoped<GetOrganizationDetailsHandler>();
+
+builder.Services.AddSingleton(new OnboardingSessionSettings(TimeSpan.FromMinutes(
+    builder.Configuration.GetValue<int>("WhatsAppOnboarding:SessionLifetimeMinutes", 15))));
+builder.Services.AddScoped<StartOnboardingSessionHandler>();
+builder.Services.AddScoped<GetOnboardingSessionHandler>();
+builder.Services.AddScoped<RegisterOnboardingResultHandler>();
+builder.Services.AddScoped<ListWhatsAppAccountsHandler>();
+builder.Services.AddScoped<GetWhatsAppAccountHandler>();
 
 var app = builder.Build();
 app.UseExceptionHandler();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.MapGet("/health/live", () => Results.Ok(new { status = "alive" }));
+var organizations = app.MapGroup("/api/organizations");
+organizations.MapCreateOrganization();
+organizations.MapListOrganizations();
+organizations.MapGetOrganizationDetails();
+app.MapStartOnboardingSession();
+app.MapGetOnboardingSession();
+app.MapDevelopmentOnlyCompletion();
+app.MapListWhatsAppAccounts();
+app.MapGetWhatsAppAccount();
 app.MapFallback("/api/{**path}", () => Results.NotFound());
 app.MapFallbackToFile("index.html");
 app.Run();

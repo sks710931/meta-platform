@@ -1,14 +1,14 @@
 # Domain model
 
-This describes intended ownership and boundaries. Only typed identifier contracts are
-implemented; aggregates, workflows, policies, and persistence tables are future work.
+This describes intended ownership and boundaries. Organization creation/reads and the WhatsApp Accounts onboarding model are implemented.
+External Meta integration and other workflows remain future work.
 
 | Term | Owner | Intended boundary and references |
 | --- | --- | --- |
 | Organization | Organizations | Customer/tenant root identified by `OrganizationId`; no collection of WhatsApp accounts |
 | WhatsApp Account | WhatsApp Accounts | Small root identified by `WhatsAppAccountId`, referencing `OrganizationId`; separate external Meta WABA identifier |
 | Phone Number | WhatsApp Accounts | Independently addressable root identified by `PhoneNumberId`, referencing its `WhatsAppAccountId` and tenant; separate Meta phone-number identifier |
-| Messaging Account | Messaging | Messaging/payment entity associated with a connected account; `MessagingAccountId`, `WhatsAppAccountId`, and `OrganizationId` references |
+| Messaging Account | WhatsApp Accounts | Minimal messaging/payment identity associated with a connected account; `MessagingAccountId`, `WhatsAppAccountId`, and `OrganizationId` references |
 | Credit Line Assignment | Billing | Small root identified by `CreditLineAssignmentId`, referencing customer `MessagingAccountId` and `OrganizationId`; records platform/Solution Partner credit-line association |
 | Platform user/membership | Identity | Future identity and authorization model; organization membership expressed by ID rather than embedding Organization |
 | Partner/platform configuration | Platform Administration | Future operator-owned settings for the platform or Solution Partner; no credentials in Domain |
@@ -49,4 +49,55 @@ invoice model, or credit-line operation is implemented here.
 - Store internal primary keys as typed GUIDs/`uuid`. External Meta identifiers are separate provider references, not GUID substitutes or primary keys.
 - Keep Graph API payloads, tokens, transport errors, and provider-specific enums in Infrastructure adapters. Translate them at the boundary.
 - Persist UTC timestamps via `DateTimeOffset`; inject a clock for temporal rules.
-- No Meta or WhatsApp operations, Organization CRUD, or aggregate behavior are introduced in this iteration.
+- Organization create/list/details and local WhatsApp Account onboarding records are implemented. No external Meta operations, updates/deletion, identity, credit-line assignment, billing, sending, or webhooks are implemented.
+
+## Implemented Organization aggregate
+
+Organization has exactly `Id` (`OrganizationId`), `Name`, `Status`, and `CreatedAt`.
+All properties are read-only. `Organization.Create` receives the ID and UTC timestamp;
+it has no persistence, HTTP, random-ID generation, or system-clock dependency.
+
+Names are case-preserving, with surrounding whitespace removed and whitespace runs
+collapsed to one space. Empty/whitespace names, null characters, and normalized names
+longer than 200 characters return validation failures. Duplicate names are allowed.
+New roots always start Active; Suspended is a defined state, with no transition API yet.
+Nonzero timestamp offsets are rejected rather than silently reinterpreted as UTC.
+The application clock uses UTC millisecond precision; PostgreSQL stores `timestamptz`.
+The aggregate contains no external identifiers, memberships, or connected-account collections.
+
+## WhatsApp Accounts onboarding model
+
+- **WhatsAppAccount**: typed internal Id, OrganizationId, SignupSessionId, typed external WABA ID, normalized DisplayName, Status, CreatedAt, ConnectedAt. New successful registrations are Connected; Pending/Suspended/Disconnected are defined but no transitions are exposed. SignupSessionId is an integrity/replay link, not a large aggregate graph.
+- **MessagingAccount**: internal MessagingAccountId, WhatsAppAccountId, typed external messaging/payment ID, CreatedAt. This metadata entity is owned by WhatsApp Accounts, not the future message-sending context. The existing public Messaging.Contracts.MessagingAccountId is reused; that context's implementation is unchanged.
+- **PhoneNumber**: internal PhoneNumberId, WhatsAppAccountId, typed external phone ID, trimmed DisplayPhoneNumber, optional trimmed VerifiedName, local Registered status, CreatedAt. Registered means locally recorded; it does not assert Meta provisioning/verification.
+- **EmbeddedSignupSession**: typed internal Id, OrganizationId, Status, StartedAt, ExpiresAt, optional CompletedAt. It is an independent aggregate. There are no tokens, authorization codes, secrets, or Organization navigation collections.
+
+All internal IDs remain UUIDs. External identifiers are distinct value objects containing
+canonical positive ASCII decimal strings of at most 100 characters. They are never aggregate
+primary keys. Account names preserve case, normalize whitespace, and have a 200-character
+limit; absent names fall back to the external WABA ID. Phone displays are nonempty with a
+50-character limit; verified names are optional with a 200-character limit. Timestamps are UTC.
+
+```text
+Organization (ID reference only)
+    ↓ Start Embedded Signup Session
+Pending
+    ↓ External onboarding succeeds (currently simulated locally)
+Register account result
+    ↓ WhatsAppAccount created
+    ↓ MessagingAccount created
+    ↓ PhoneNumber(s) created
+    ↓ Session Completed — one atomic database commit
+```
+
+Session transitions are Pending → Completed, Pending → Failed, or Pending → Expired.
+Terminal states never reopen. CompletedAt exists only for Completed and falls in
+[StartedAt, ExpiresAt). At the expiration boundary, completion is rejected. Expiration is
+persisted lazily on state reads or completion attempts; there is no background worker.
+Failure is a domain operation for future orchestration, not a public HTTP endpoint.
+
+A repeated identical successful callback returns the existing internal account; it does not
+repeat the domain transition. Different data for that session returns a conflict. Global
+external-ID uniqueness prevents reconnecting the same external entity to another root/tenant
+in this iteration. Transfer/reconnection policies and real Meta identifier rules must be
+reviewed when the real integration is designed.

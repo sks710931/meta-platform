@@ -1,3 +1,3 @@
 # Organizations
 
-Add one directory per use-case slice when features are implemented. A slice owns its command/query, handler, validation, and explicit persistence ports as needed. No generic repositories or speculative handlers.
+CreateOrganization, ListOrganizations, and GetOrganizationDetails are the implemented slices. They use only Domain and the context-specific IOrganizationStore port. Responses are explicit application contracts; persistence and HTTP types do not enter the slices.
