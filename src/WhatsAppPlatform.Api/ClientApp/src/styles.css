@@ -1,20 +1,19 @@
-body {
-  margin: 0;
-  font-family: system-ui, sans-serif;
-  color: #172b29;
-  background: #f5f8f7;
-}
+@import "tailwindcss";
 
-main {
-  max-width: 48rem;
-  margin: 4rem auto;
-  padding: 2rem;
+@layer base {
+  body {
+    @apply m-0 bg-slate-50 font-sans text-slate-900 antialiased;
+  }
+  button:not(:disabled),
+  summary {
+    @apply cursor-pointer;
+  }
+  button,
+  a,
+  summary {
+    @apply focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-indigo-600;
+  }
+  ::selection {
+    @apply bg-indigo-100 text-indigo-950;
+  }
 }
-
-button, input { font: inherit; padding: 0.4rem; margin: 0.3rem; }
-label { display: block; }
-table { width: 100%; margin-top: 1rem; border-collapse: collapse; }
-th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid #c7d2cf; }
-dt { font-weight: bold; margin-top: 0.8rem; }
-dd { margin: 0.3rem 0; overflow-wrap: anywhere; }
-[role="alert"] { color: #9b1c1c; }
