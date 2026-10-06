@@ -158,9 +158,10 @@ validated between 1 and 1440 minutes. TimeProvider remains injected; generated t
 UTC millisecond precision. The minimal UI adds account/phone state and session/manual controls
 to Organization details without introducing a design system or routing dependency.
 
-Nine focused domain test methods add ten cases for session lifecycle, UTC time, account
+Ten focused domain test methods add eleven cases for session lifecycle, UTC time, account
 creation/ownership, and external-ID validation. The existing ID smoke test also checks the
-new session ID. One standalone Python smoke script exercises persistence, replay/concurrency,
-uniqueness rollback, tenant list separation, malformed input, and credential-field rejection
-against an empty isolated database. It uses only the standard library; no new integration
-framework or coverage target is introduced.
+new session ID. Provider identifiers preserve opaque values and reject missing, oversized,
+control-character, or invalid Unicode input. MessagingAccountId belongs to WhatsApp Accounts.
+Only small unit tests are retained; deferred persistence scenarios are documented in
+[future integration scenarios](future-integration-tests.md). No integration infrastructure
+or coverage targets are introduced.

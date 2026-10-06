@@ -15,7 +15,7 @@ public sealed class RegisterOnboardingResultHandler(IWhatsAppAccountStore store,
         var now = DateTimeOffset.FromUnixTimeMilliseconds(clock.GetUtcNow().ToUnixTimeMilliseconds());
         var draft = RegistrationDraft.Create(session, input, now);
         if (draft is null) return OnboardingResult<RegistrationResponse>.Failure(OnboardingError.Invalid,
-            "Provide valid numeric external IDs, a display name up to 200 characters, and 1–100 distinct phone numbers (display up to 50, verified name up to 200 characters).");
+            "Provide nonempty external IDs up to 100 characters without control characters, a display name up to 200 characters, and 1–100 distinct phone numbers (display up to 50, verified name up to 200 characters).");
         if (session.Status == EmbeddedSignupSessionStatus.Completed)
             return await ReplayAsync(sessionId, draft, cancellationToken);
         var transition = session.Complete(now);

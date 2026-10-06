@@ -8,7 +8,7 @@ public sealed record ExternalWhatsAppAccountId
     public static bool TryCreate(string? value, out ExternalWhatsAppAccountId? identifier)
     {
         identifier = null;
-        if (string.IsNullOrEmpty(value) || value.Length > 100 || value[0] == '0' || !value.All(char.IsAsciiDigit))
+        if (!ExternalIdentifierValidation.IsValid(value))
             return false;
         identifier = new ExternalWhatsAppAccountId(value);
         return true;

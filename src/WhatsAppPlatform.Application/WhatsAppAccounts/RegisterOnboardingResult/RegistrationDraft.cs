@@ -1,5 +1,4 @@
 using WhatsAppPlatform.Application.WhatsAppAccounts.Contracts;
-using WhatsAppPlatform.Domain.Messaging.Contracts;
 using WhatsAppPlatform.Domain.WhatsAppAccounts;
 using WhatsAppPlatform.Domain.WhatsAppAccounts.Contracts;
 

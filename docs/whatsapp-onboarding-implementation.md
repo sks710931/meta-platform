@@ -13,9 +13,10 @@ are implemented. Organization stays unchanged as an aggregate; it has no account
 | PhoneNumber | Internal PhoneNumberId, WhatsAppAccountId, typed ExternalPhoneNumberId, DisplayPhoneNumber, optional VerifiedName, local Registered status, CreatedAt |
 | EmbeddedSignupSession | Internal EmbeddedSignupSessionId, OrganizationId, Status, StartedAt, ExpiresAt, optional CompletedAt; independent aggregate |
 
-The existing Messaging.Contracts.MessagingAccountId is reused through its public contract;
+MessagingAccountId is owned by WhatsAppAccounts.Contracts;
 no Messaging implementation was introduced. All primary keys are nonempty typed UUIDs.
-External IDs are separate positive ASCII decimal value objects, at most 100 characters,
+External IDs are separate opaque value objects, at most 100 Unicode characters,
+with valid Unicode, required non-whitespace content, and no control characters,
 never internal keys. Display names normalize whitespace (200-character limit); missing
 account names fall back to the external ID. Phone displays are trimmed/nonempty (limit 50),
 and optional verified names are trimmed (limit 200). All timestamps are UTC.
@@ -53,9 +54,9 @@ timestamps use timestamp with time zone; names/statuses/external IDs use bounded
 
 | Table | Integrity and indexes added |
 | --- | --- |
-| accounts | UUID PK; unique external_whatsapp_account_id; unique signup_session_id; Organization FK; composite (signup_session_id, organization_id) FK enforcing the session's tenant; status/numeric-ID/nonempty-name/Connected-time checks; organization + descending created_at/id list index; composite session FK index |
-| messaging_accounts | UUID PK; unique external_messaging_account_id; unique whatsapp_account_id (one messaging record per account); account FK; numeric external-ID check |
-| phone_numbers | UUID PK; unique external_phone_number_id; account FK and FK index; numeric external-ID, nonempty display, and Registered-status checks |
+| accounts | UUID PK; unique external_whatsapp_account_id; unique signup_session_id; Organization FK; composite (signup_session_id, organization_id) FK enforcing the session's tenant; status/opaque-ID/nonempty-name/Connected-time checks; organization + descending created_at/id list index; composite session FK index |
+| messaging_accounts | UUID PK; unique external_messaging_account_id; unique whatsapp_account_id (one messaging record per account); account FK; opaque external-ID check |
+| phone_numbers | UUID PK; unique external_phone_number_id; account FK and FK index; opaque external-ID, nonempty display, and Registered-status checks |
 | embedded_signup_sessions | UUID PK; alternate unique (id, organization_id) key; Organization FK; valid status, expiry-after-start, and completion-time/state checks; organization/start index; status optimistic concurrency token |
 
 All FKs restrict deletion. External-ID uniqueness is global within each table for this
@@ -102,7 +103,7 @@ routes do not provide ownership authorization. Do not expose this scaffold to un
 
 ## Exact tests added
 
-Nine domain test methods add ten unit cases (expiration has two cases):
+Ten domain test methods add eleven unit cases (expiration has two cases):
 
 | Test | Why valuable |
 | --- | --- |
@@ -114,25 +115,22 @@ Nine domain test methods add ten unit cases (expiration has two cases):
 | Invalid_completion_time_does_not_change_session_state | Rejects non-UTC or pre-start completion without mutation |
 | Connected_account_has_internal_identity_ownership_and_utc_connection_time | Protects internal identity/tenant ownership, initial Connected state, normalized/fallback name, UTC connection time |
 | Invalid_account_name_or_non_utc_time_is_rejected | Prevents invalid account records reaching persistence |
-| External_identifiers_reject_malformed_values_instead_of_becoming_internal_ids | Protects the distinction and validation of provider identifiers |
+| External_identifiers_preserve_opaque_provider_values / External_identifiers_reject_missing_oversized_control_or_invalid_unicode_values | Protects the distinction and validation of provider identifiers |
 
 The existing Internal_ids_reject_empty_identifiers test also covers EmbeddedSignupSessionId.
-All 21 unit cases passed, none skipped. No coverage target or mocked suite was added.
+All 22 unit cases passed, none skipped. No coverage target or mocked suite was added.
 
-One small standalone standard-library Python persistence/API smoke check was added at
-`tests/WhatsAppPlatform.Tests/WhatsAppAccounts/onboarding_smoke.py`. It requires an empty,
-isolated, migrated database and Development host. It proves graph persistence, tenant-list
-separation, sequential/conflicting replay, all three global external-ID uniqueness failures
-with rollback, invalid/unknown-field rejection, UUID/404 behavior, and six concurrent identical
-callbacks converging to one account. It is manually run; no integration project/framework was
-introduced. Never run it against a database containing user data.
+The standalone Python smoke script has been removed during architecture cleanup.
+Its valuable persistence and concurrency cases are deferred to
+[future integration scenarios](future-integration-tests.md); no replacement test framework
+or mocked persistence tests were added.
 
 ## Validation and scope report
 
 - .NET solution builds with zero warnings/errors; all existing and new unit cases pass.
 - React strict TypeScript and production build pass. No any or unchecked casts were introduced.
 - Migration generated and applied to fresh databases and upgraded the normal development database; repeated application is up to date, pending-model check passes, and idempotent SQL reapplication succeeds.
-- The persisted smoke script passed against its own fresh validation database. Additional manual checks confirmed lazy expiry/410, failure/409, null completion times for terminal failures, and Production completion-route exclusion.
+- During the original slice validation, manual checks confirmed lazy expiry/410, failure/409, null completion times for terminal failures, and Production completion-route exclusion.
 - Organization details contains the minimal account/phone list, Connect action, session state/refresh, and backend-gated manual form. Browser interaction was not automated.
 
 No scope deviations. Extra SignupSessionId and its unique/composite keys support replay and

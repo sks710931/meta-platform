@@ -116,7 +116,7 @@ scoped with Npgsql; Organizations requests use the database, while liveness does
 - `src/WhatsAppPlatform.Application`: future vertical use-case slices, depending only on Domain.
 - `src/WhatsAppPlatform.Infrastructure`: EF Core/Npgsql and future external adapters.
 - `src/WhatsAppPlatform.Api`: HTTP boundary, composition root, and `ClientApp` React UI.
-- `tests/WhatsAppPlatform.Tests`: 21 deterministic unit test cases; no integration/E2E suites or coverage targets.
+- `tests/WhatsAppPlatform.Tests`: 22 deterministic unit test cases; no integration/E2E suites or coverage targets.
 
 The tests protect nonempty typed IDs, value/type identity, scoped Npgsql registration,
 and critical Organization creation invariants. They do not test framework behavior or properties
@@ -168,14 +168,7 @@ Malformed/empty UUIDs are 400. Lifetime is configured with
 using the existing EF commands before startup. For the lifecycle, schema constraints,
 completion payload, and exact test list, see [onboarding report](docs/whatsapp-onboarding-implementation.md).
 
-The optional standard-library persistence smoke script must target an empty isolated migrated
-database and a Development API host. It writes test fixtures and deliberately refuses a
-nonempty organization catalog:
-
-```bash
-python3 tests/WhatsAppPlatform.Tests/WhatsAppAccounts/onboarding_smoke.py --base-url http://127.0.0.1:5082
-```
-
-All 21 deterministic unit cases run through `dotnet test`; the optional smoke script is
-manual, not part of the unit runner. No Meta calls, credit-line assignment, billing,
-sending, or webhooks are implemented.
+Testing remains limited to small deterministic unit tests run through `dotnet test`.
+Persistence and concurrency checks are documented as [future integration scenarios](docs/future-integration-tests.md),
+without introducing integration-test infrastructure. No Meta calls, credit-line assignment,
+billing, sending, or webhooks are implemented.

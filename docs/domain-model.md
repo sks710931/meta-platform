@@ -68,12 +68,12 @@ The aggregate contains no external identifiers, memberships, or connected-accoun
 ## WhatsApp Accounts onboarding model
 
 - **WhatsAppAccount**: typed internal Id, OrganizationId, SignupSessionId, typed external WABA ID, normalized DisplayName, Status, CreatedAt, ConnectedAt. New successful registrations are Connected; Pending/Suspended/Disconnected are defined but no transitions are exposed. SignupSessionId is an integrity/replay link, not a large aggregate graph.
-- **MessagingAccount**: internal MessagingAccountId, WhatsAppAccountId, typed external messaging/payment ID, CreatedAt. This metadata entity is owned by WhatsApp Accounts, not the future message-sending context. The existing public Messaging.Contracts.MessagingAccountId is reused; that context's implementation is unchanged.
+- **MessagingAccount**: internal MessagingAccountId, WhatsAppAccountId, typed external messaging/payment ID, CreatedAt. This metadata entity is owned by WhatsApp Accounts, not the future message-sending context. Its internal ID contract is owned by WhatsAppAccounts.Contracts; Messaging remains reserved for future conversations, messages, outbound messages, and delivery status.
 - **PhoneNumber**: internal PhoneNumberId, WhatsAppAccountId, typed external phone ID, trimmed DisplayPhoneNumber, optional trimmed VerifiedName, local Registered status, CreatedAt. Registered means locally recorded; it does not assert Meta provisioning/verification.
 - **EmbeddedSignupSession**: typed internal Id, OrganizationId, Status, StartedAt, ExpiresAt, optional CompletedAt. It is an independent aggregate. There are no tokens, authorization codes, secrets, or Organization navigation collections.
 
 All internal IDs remain UUIDs. External identifiers are distinct value objects containing
-canonical positive ASCII decimal strings of at most 100 characters. They are never aggregate
+opaque, non-whitespace values of at most 100 Unicode characters, with valid Unicode and no control characters. They are never aggregate
 primary keys. Account names preserve case, normalize whitespace, and have a 200-character
 limit; absent names fall back to the external WABA ID. Phone displays are nonempty with a
 50-character limit; verified names are optional with a 200-character limit. Timestamps are UTC.

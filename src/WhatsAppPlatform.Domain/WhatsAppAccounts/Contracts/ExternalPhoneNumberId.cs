@@ -8,7 +8,7 @@ public sealed record ExternalPhoneNumberId
     public static bool TryCreate(string? value, out ExternalPhoneNumberId? identifier)
     {
         identifier = null;
-        if (string.IsNullOrEmpty(value) || value.Length > 100 || value[0] == '0' || !value.All(char.IsAsciiDigit))
+        if (!ExternalIdentifierValidation.IsValid(value))
             return false;
         identifier = new ExternalPhoneNumberId(value);
         return true;

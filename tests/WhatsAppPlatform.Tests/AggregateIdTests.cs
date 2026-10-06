@@ -1,5 +1,4 @@
 using WhatsAppPlatform.Domain.Billing.Contracts;
-using WhatsAppPlatform.Domain.Messaging.Contracts;
 using WhatsAppPlatform.Domain.Organizations.Contracts;
 using WhatsAppPlatform.Domain.WhatsAppAccounts.Contracts;
 using Xunit;

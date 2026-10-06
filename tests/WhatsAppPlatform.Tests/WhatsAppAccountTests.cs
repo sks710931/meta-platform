@@ -41,12 +41,27 @@ public sealed class WhatsAppAccountTests
     }
 
     [Fact]
-    public void External_identifiers_reject_malformed_values_instead_of_becoming_internal_ids()
+    public void External_identifiers_preserve_opaque_provider_values()
     {
-        Assert.False(ExternalWhatsAppAccountId.TryCreate("not-an-id", out _));
-        Assert.False(ExternalMessagingAccountId.TryCreate("0123", out _));
-        Assert.False(ExternalPhoneNumberId.TryCreate("", out _));
-        Assert.False(ExternalPhoneNumberId.TryCreate(new string('1', 101), out _));
-        Assert.False(ExternalWhatsAppAccountId.TryCreate(" 123 ", out _));
+        foreach (var value in new[] { "provider:001/a-B", "0123", "0", "référence-😀", new string('x', 100), string.Concat(Enumerable.Repeat("😀", 100)) })
+        {
+            Assert.True(ExternalWhatsAppAccountId.TryCreate(value, out var accountId));
+            Assert.True(ExternalMessagingAccountId.TryCreate(value, out var messagingId));
+            Assert.True(ExternalPhoneNumberId.TryCreate(value, out var phoneId));
+            Assert.Equal(value, accountId?.Value);
+            Assert.Equal(value, messagingId?.Value);
+            Assert.Equal(value, phoneId?.Value);
+        }
+    }
+
+    [Fact]
+    public void External_identifiers_reject_missing_oversized_control_or_invalid_unicode_values()
+    {
+        foreach (var value in new[] { null, "", "   ", new string('x', 101), string.Concat(Enumerable.Repeat("😀", 101)), "id\0", "id\n", "id\u007f", "id\u0085", "id\ud800" })
+        {
+            Assert.False(ExternalWhatsAppAccountId.TryCreate(value, out _));
+            Assert.False(ExternalMessagingAccountId.TryCreate(value, out _));
+            Assert.False(ExternalPhoneNumberId.TryCreate(value, out _));
+        }
     }
 }

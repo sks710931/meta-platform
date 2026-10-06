@@ -2,18 +2,21 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using WhatsAppPlatform.Infrastructure.Persistence;
 
 #nullable disable
 
-namespace WhatsAppPlatform.Infrastructure.Organizations.Migrations
+namespace WhatsAppPlatform.Infrastructure.WhatsAppAccounts.Migrations
 {
     [DbContext(typeof(PlatformDbContext))]
-    partial class PlatformDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261006154412_TreatExternalIdentifiersAsOpaque")]
+    partial class TreatExternalIdentifiersAsOpaque
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

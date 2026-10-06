@@ -8,7 +8,7 @@ public sealed record ExternalMessagingAccountId
     public static bool TryCreate(string? value, out ExternalMessagingAccountId? identifier)
     {
         identifier = null;
-        if (string.IsNullOrEmpty(value) || value.Length > 100 || value[0] == '0' || !value.All(char.IsAsciiDigit))
+        if (!ExternalIdentifierValidation.IsValid(value))
             return false;
         identifier = new ExternalMessagingAccountId(value);
         return true;

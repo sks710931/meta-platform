@@ -1,4 +1,4 @@
-namespace WhatsAppPlatform.Domain.Messaging.Contracts;
+namespace WhatsAppPlatform.Domain.WhatsAppAccounts.Contracts;
 
 public sealed record MessagingAccountId
 {

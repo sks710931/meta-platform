@@ -12,7 +12,7 @@ internal sealed class PhoneNumberConfiguration : IEntityTypeConfiguration<PhoneN
     {
         builder.ToTable("phone_numbers", DatabaseSchemas.WhatsApp, table =>
         {
-            table.HasCheckConstraint("ck_phone_external_id", "external_phone_number_id ~ '^[1-9][0-9]{0,99}$'");
+            table.HasCheckConstraint("ck_phone_external_id", """char_length(external_phone_number_id) BETWEEN 1 AND 100 AND btrim(external_phone_number_id, U&'\0020\00A0\1680\2000\2001\2002\2003\2004\2005\2006\2007\2008\2009\200A\2028\2029\202F\205F\3000') <> '' AND external_phone_number_id !~ U&'[\0001-\001F\007F-\009F]'""");
             table.HasCheckConstraint("ck_phone_display", "length(btrim(display_phone_number)) > 0");
             table.HasCheckConstraint("ck_phone_status", "status = 'Registered'");
         });

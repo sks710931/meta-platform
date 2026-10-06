@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using WhatsAppPlatform.Domain.Messaging.Contracts;
 using WhatsAppPlatform.Domain.WhatsAppAccounts;
 using WhatsAppPlatform.Domain.WhatsAppAccounts.Contracts;
 using WhatsAppPlatform.Infrastructure.Persistence;
@@ -12,7 +11,7 @@ internal sealed class MessagingAccountConfiguration : IEntityTypeConfiguration<M
     public void Configure(EntityTypeBuilder<MessagingAccount> builder)
     {
         builder.ToTable("messaging_accounts", DatabaseSchemas.WhatsApp, table =>
-            table.HasCheckConstraint("ck_messaging_external_id", "external_messaging_account_id ~ '^[1-9][0-9]{0,99}$'"));
+            table.HasCheckConstraint("ck_messaging_external_id", """char_length(external_messaging_account_id) BETWEEN 1 AND 100 AND btrim(external_messaging_account_id, U&'\0020\00A0\1680\2000\2001\2002\2003\2004\2005\2006\2007\2008\2009\200A\2028\2029\202F\205F\3000') <> '' AND external_messaging_account_id !~ U&'[\0001-\001F\007F-\009F]'"""));
         builder.HasKey(account => account.Id);
         builder.Property(account => account.Id).HasColumnName("id").HasColumnType("uuid")
             .HasConversion(id => id.Value, value => new MessagingAccountId(value)).ValueGeneratedNever();
