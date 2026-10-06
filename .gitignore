@@ -1,0 +1,12 @@
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+src/WhatsAppPlatform.Api/wwwroot/
+.env
+.env.*
+!.env.example
+TestResults/
+*.user
+*.suo
+artifacts/

@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/WhatsAppPlatform.Domain/WhatsAppPlatform.Domain.csproj" />
+    <Project Path="src/WhatsAppPlatform.Application/WhatsAppPlatform.Application.csproj" />
+    <Project Path="src/WhatsAppPlatform.Infrastructure/WhatsAppPlatform.Infrastructure.csproj" />
+    <Project Path="src/WhatsAppPlatform.Api/WhatsAppPlatform.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/WhatsAppPlatform.Tests/WhatsAppPlatform.Tests.csproj" />
+  </Folder>
+</Solution>

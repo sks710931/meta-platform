@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <ItemGroup>
+    <Content Remove="ClientApp/**/*;wwwroot/**/*" />
+    <ProjectReference Include="../WhatsAppPlatform.Application/WhatsAppPlatform.Application.csproj" />
+    <ProjectReference Include="../WhatsAppPlatform.Infrastructure/WhatsAppPlatform.Infrastructure.csproj" />
+  </ItemGroup>
+  <Target Name="BuildClient" BeforeTargets="BeforeBuild" Condition="'$(DesignTimeBuild)' != 'true'">
+    <Exec WorkingDirectory="$(MSBuildProjectDirectory)/ClientApp" Command="npm ci --no-audit --no-fund" />
+    <Exec WorkingDirectory="$(MSBuildProjectDirectory)/ClientApp" Command="npm run build" />
+    <ItemGroup>
+      <ClientFiles Include="$(MSBuildProjectDirectory)/ClientApp/dist/**/*" />
+    </ItemGroup>
+    <RemoveDir Directories="$(MSBuildProjectDirectory)/wwwroot" />
+    <Copy SourceFiles="@(ClientFiles)" DestinationFiles="@(ClientFiles->'$(MSBuildProjectDirectory)/wwwroot/%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+  <Target Name="PublishClient" AfterTargets="ComputeFilesToPublish">
+    <ItemGroup>
+      <ClientPublishFiles Include="$(MSBuildProjectDirectory)/wwwroot/**/*" />
+      <ResolvedFileToPublish Include="@(ClientPublishFiles)" Exclude="@(ResolvedFileToPublish)">
+        <RelativePath>wwwroot/%(ClientPublishFiles.RecursiveDir)%(ClientPublishFiles.Filename)%(ClientPublishFiles.Extension)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
+</Project>

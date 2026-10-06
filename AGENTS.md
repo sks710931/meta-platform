@@ -34,7 +34,7 @@ Hard rules for every change. Product behavior lives elsewhere. These rules are a
 
 ## Tests
 
-- Domain rules have unit tests with no network, no filesystem, and no real clock.
+- Critical domain rules have small, deterministic unit tests with no network, no filesystem, and no real clock.
 - Test the module through its public contract. Do not mock the unit under test.
 - A bug fix includes a failing test that the fix turns green.
 - Do not assert on log text or private fields.
@@ -46,3 +46,22 @@ Hard rules for every change. Product behavior lives elsewhere. These rules are a
 - Secrets, tokens, and local env files are never committed.
 - Generated code is regenerated, not hand-edited.
 - If a rule in this file conflicts with a one-off shortcut, the rule wins.
+
+## Platform architecture (cross-cutting bootstrap)
+
+- This repository is a modular monolith on .NET 10, ASP.NET Core, strict React TypeScript, and PostgreSQL/Npgsql.
+- Read `docs/architecture.md` and `docs/domain-model.md` before adding a feature.
+- Domain has no package dependencies. Application depends only on Domain.
+- Infrastructure depends on Application/Domain. API references Infrastructure only as the composition root; HTTP slices depend on Application contracts.
+- Keep Organizations, WhatsApp Accounts, Messaging, Billing, Identity, and Platform Administration separate. Import only explicit contracts across contexts.
+- Add vertical slices inside the owning context when a feature is authorized. Do not invent generic repositories, services, or placeholder handlers.
+- Aggregate identifiers are typed internal IDs. Meta identifiers are external references and never internal primary keys.
+- Organization holds no collection of connected WhatsApp accounts. Tenant-owned aggregates reference `OrganizationId`.
+- Explicitly map each future EF entity to its context-owned schema. Use one physical database initially.
+- Persist UTC `DateTimeOffset` values as PostgreSQL `timestamp with time zone`. Inject clocks for domain behavior.
+- Every async API accepts and propagates `CancellationToken`.
+- Separate Meta usage/liability from customer pricing, charges, and receivables.
+- React uses strict TypeScript. Do not relax compiler checks to make builds pass.
+- Keep smoke tests intentionally small. Add tests for critical rules, security, billing, state transitions, and high-risk logic. No trivial property tests, coverage targets, large mocked suites, or integration/E2E suites in this iteration.
+- Validate with `dotnet build WhatsAppPlatform.slnx`, `dotnet test WhatsAppPlatform.slnx --no-build`, client `npm run build`, and `docker compose --env-file .env.example config --quiet`.
+- Do not implement Organization CRUD, Meta APIs, or WhatsApp functionality as part of the bootstrap.
