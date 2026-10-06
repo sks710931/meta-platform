@@ -1,6 +1,6 @@
 # Architecture
 
-The bootstrap is complete. Organizations implements create/list/details; WhatsApp Accounts now implements local onboarding sessions and account persistence, with no external integrations.
+The bootstrap, Organization reads/creation, local WhatsApp onboarding model, and Identity security slice are implemented. External integrations remain deferred.
 
 ## Why a modular monolith
 
@@ -55,10 +55,10 @@ Docker initialization script. No startup `EnsureCreated` or automatic migrations
 Schema separation is ownership, not a security or tenant-isolation mechanism. The local
 Compose user is a development database owner. Production needs separate least-privilege
 runtime/migration roles, secret management, TLS, backups, and reviewed migration deployment.
-The Organization catalog is deliberately global and unauthenticated in this iteration.
-Identity, authorization, and tenant isolation are outside the requested scope. Do not deploy
-these endpoints to an untrusted network until access control is designed. Future tenant-owned
-data must filter by `OrganizationId`; the root Organization lookup itself filters by its ID.
+Identity now authenticates via same-origin cookies and enforces organization membership.
+PlatformAdmin can access all organizations; ordinary users see only their memberships.
+Tenant-owned resources require server-resolved ownership checks; cross-tenant lookups return
+404. Deployment still requires reviewed TLS, key protection, proxy/limiting, and database roles.
 
 Contexts reference the shared public `Organizations.Contracts.OrganizationId` type.
 They may import another context's explicit contracts, never its implementation internals.
@@ -99,7 +99,7 @@ process liveness only; it does not assert database connectivity or business read
 For interactive UI work, Vite proxies `/api` and `/health` to the local ASP.NET host.
 Production serves both from one origin; no permissive CORS configuration is introduced.
 The local host binds loopback. Configure allowed hosts and HTTPS termination explicitly
-for deployment; authentication and tenant enforcement are required before untrusted access.
+for deployment; cookie authentication and tenant enforcement are now implemented.
 
 ## Validation boundaries
 
@@ -119,7 +119,7 @@ calculations, and state transitions. Do not test framework internals or trivial 
 - Infrastructure owns explicit column mapping, constraints, a newest-first `(created_at DESC, id DESC)` index, and the migration/design-time factory.
 - API maps POST/create and GET/list/details; invalid payloads and IDs are 400, missing roots 404, creation 201 with Location. Unexpected errors are generic Problem Details, with diagnostics confined to server logs.
 - React implements list/create/details views, validates API payloads as unknown input, and handles cancellation, loading, validation failures, server failures, and successful creation.
-- Listing is intentionally unpaginated and names need not be unique. Pagination, idempotency, access control, updates, and deletion are not implemented.
+- Listing is intentionally unpaginated and names need not be unique. Pagination, organization-create idempotency, updates, and deletion are not implemented; access control is now enforced.
 - Four domain test methods add eight cases for normalization/default status/UTC time, invalid names, maximum length, and non-UTC rejection. No integration-test framework was introduced.
 
 ## WhatsApp Accounts slice
@@ -136,7 +136,7 @@ Application coordinates StartOnboardingSession, GetOnboardingSession, RegisterOn
 ListWhatsAppAccounts, and GetWhatsAppAccount. IWhatsAppAccountStore is a context-specific port,
 not a generic repository. Graph reads are no-tracking and batched; list queries filter by
 OrganizationId and sort CreatedAt/Id descending. Detail/session routes are globally addressed
-as requested; authentication and ownership authorization remain future work.
+but now require authentication and server-resolved membership authorization before the handler runs.
 
 Registration validates typed external IDs and 1–100 distinct phones, completes the domain
 session, then persists the account, messaging/phone rows, and session update in one EF
@@ -150,8 +150,8 @@ Session responses expose a runtime manualCompletionAvailable flag so built React
 not show a manual form in Production. Unknown completion fields are rejected, and DTOs have
 no credential fields. No Meta HTTP adapter, SDK, embedded browser signup, or secret storage
 exists. Replace this route with a trusted real Embedded Signup adapter later; do not treat
-simulation data as proof of a real connection. Other endpoints retain the current unauthenticated
-scope and require access control before untrusted deployment.
+simulation data as proof of a real connection. All existing business endpoints now require
+authentication; onboarding writes require OrganizationAdmin or PlatformAdmin.
 
 Session lifetime defaults to 15 minutes via WhatsAppOnboarding:SessionLifetimeMinutes and is
 validated between 1 and 1440 minutes. TimeProvider remains injected; generated timestamps use
@@ -165,3 +165,20 @@ control-character, or invalid Unicode input. MessagingAccountId belongs to Whats
 Only small unit tests are retained; deferred persistence scenarios are documented in
 [future integration scenarios](future-integration-tests.md). No integration infrastructure
 or coverage targets are introduced.
+
+## Authentication and organization membership
+
+See [authentication architecture](authentication.md) for the complete endpoint authorization
+matrix, cookies, antiforgery, bootstrap, schema, and deployment tradeoffs.
+
+Authentication → Current User → PlatformAdmin grants platform-wide access; otherwise
+OrganizationMembership determines organization scope. PlatformAdmin is an Identity role;
+OrganizationAdmin and Member are tenant-specific roles on independent membership records.
+Domain remains free of EF, Identity, ASP.NET, and ClaimsPrincipal. Infrastructure persists
+Identity and memberships; Application makes small reusable access decisions; API extracts
+claims, owns cookies/antiforgery, and applies the access filter before business handlers.
+Organization listing scopes the query to authorized organization IDs. Indirect account/session
+lookups resolve OrganizationId from persisted ownership before reading or mutating state.
+
+Future Meta credentials, WhatsApp operations, messaging, templates, billing, and credit-line
+operations must use this same organization authorization boundary. No such features are added.

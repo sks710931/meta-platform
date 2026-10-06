@@ -1,3 +1,4 @@
+import { AuthenticationShell } from "./auth/AuthenticationShell";
 import { useState } from "react";
 import { CreateOrganization } from "./organizations/CreateOrganization";
 import { OrganizationDetails } from "./organizations/OrganizationDetails";
@@ -5,7 +6,9 @@ import { OrganizationsList } from "./organizations/OrganizationsList";
 
 type View = { kind: "list" } | { kind: "create" } | { kind: "details"; organizationId: string };
 
-export function App() {
+export function App() { return <AuthenticationShell><AuthenticatedApp /></AuthenticationShell>; }
+
+function AuthenticatedApp() {
   const [view, setView] = useState<View>({ kind: "list" });
   const [created, setCreated] = useState(false);
   function showDetails(organizationId: string) {

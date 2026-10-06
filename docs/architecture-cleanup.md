@@ -1,5 +1,7 @@
 # Architecture cleanup report
 
+Historical slice report; the current authentication and authorization rules are in [authentication.md](authentication.md).
+
 Cross-cutting cleanup: WhatsApp Accounts owns its messaging/payment ID contract, and
 Domain validation, Application error wording, and PostgreSQL constraints now agree on
 opaque provider identifiers. No product features or public response shapes were added.

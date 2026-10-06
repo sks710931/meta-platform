@@ -1,3 +1,4 @@
+import { useCurrentUser } from "../auth/AuthenticationShell";
 import { useEffect, useState } from "react";
 import { errorMessage, listOrganizations } from "./organizationsApi";
 import type { Organization } from "./organizationsApi";
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export function OrganizationsList({ onCreate, onSelect }: Props) {
+  const user = useCurrentUser();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +29,7 @@ export function OrganizationsList({ onCreate, onSelect }: Props) {
   return (
     <section>
       <h2>Organizations</h2>
-      <button onClick={onCreate}>Create organization</button>
+      {user.isPlatformAdmin && <button onClick={onCreate}>Create organization</button>}
       {loading && <p role="status">Loading organizations…</p>}
       {error && <><p role="alert">{error}</p><button onClick={() => setAttempt(attempt + 1)}>Retry</button></>}
       {!loading && !error && (organizations.length === 0 ? <p>No organizations yet.</p> : (

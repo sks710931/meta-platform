@@ -85,8 +85,9 @@ dotnet publish src/WhatsAppPlatform.Api -c Release -o ./artifacts/api
 ```
 
 Configure the connection string, allowed hosts, and HTTPS termination for deployment.
-The Organizations catalog is deliberately unauthenticated as requested. Keep it on a trusted
-local network; public deployment requires identity, authorization, and secure configuration.
+All business APIs require Identity cookie authentication and organization authorization.
+Read [authentication setup](docs/authentication.md) before starting: provision an explicit
+PlatformAdmin using injected configuration; no default credentials or public registration exist.
 
 ## PostgreSQL
 
@@ -116,7 +117,7 @@ scoped with Npgsql; Organizations requests use the database, while liveness does
 - `src/WhatsAppPlatform.Application`: future vertical use-case slices, depending only on Domain.
 - `src/WhatsAppPlatform.Infrastructure`: EF Core/Npgsql and future external adapters.
 - `src/WhatsAppPlatform.Api`: HTTP boundary, composition root, and `ClientApp` React UI.
-- `tests/WhatsAppPlatform.Tests`: 22 deterministic unit test cases; no integration/E2E suites or coverage targets.
+- `tests/WhatsAppPlatform.Tests`: 29 deterministic unit test cases; no integration/E2E suites or coverage targets.
 
 The tests protect nonempty typed IDs, value/type identity, scoped Npgsql registration,
 and critical Organization creation invariants. They do not test framework behavior or properties
@@ -172,3 +173,15 @@ Testing remains limited to small deterministic unit tests run through `dotnet te
 Persistence and concurrency checks are documented as [future integration scenarios](docs/future-integration-tests.md),
 without introducing integration-test infrastructure. No Meta calls, credit-line assignment,
 billing, sending, or webhooks are implemented.
+
+## Authentication setup
+
+Apply the Identity migration before configuring bootstrap/startup. Inject BootstrapAdmin__Email
+and BootstrapAdmin__Password from your local environment or production secret store, never
+commit their values, and remove them after provisioning. Production also requires HTTPS and
+DataProtection__KeyDirectory pointing to a protected persistent key ring. No default password
+is created. See [authentication architecture and endpoint rules](docs/authentication.md).
+
+For explicit local membership fixtures only, set DevelopmentMember__Email, __Password,
+__OrganizationId, and __Role (Member or OrganizationAdmin). The organization must exist;
+restart the Development host to provision the fixture idempotently. There is no membership API.

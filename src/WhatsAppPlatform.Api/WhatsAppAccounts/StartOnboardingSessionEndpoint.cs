@@ -1,3 +1,4 @@
+using WhatsAppPlatform.Api.Identity;
 using WhatsAppPlatform.Application.WhatsAppAccounts.StartOnboardingSession;
 using WhatsAppPlatform.Domain.Organizations.Contracts;
 
@@ -6,7 +7,7 @@ namespace WhatsAppPlatform.Api.WhatsAppAccounts;
 internal static class StartOnboardingSessionEndpoint
 {
     public static void MapStartOnboardingSession(this WebApplication app) =>
-        app.MapPost("/api/organizations/{organizationId}/whatsapp/onboarding-sessions", HandleAsync);
+        app.MapPost("/api/organizations/{organizationId}/whatsapp/onboarding-sessions", HandleAsync).RequireAuthorization().AddEndpointFilter<OrganizationAccessFilter>().WithMetadata(new OrganizationAdministrationAccess());
 
     private static async Task<IResult> HandleAsync(string organizationId, StartOnboardingSessionHandler handler,
         IHostEnvironment environment, CancellationToken cancellationToken)

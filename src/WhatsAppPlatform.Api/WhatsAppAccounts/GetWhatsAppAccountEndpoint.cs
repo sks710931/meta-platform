@@ -1,3 +1,4 @@
+using WhatsAppPlatform.Api.Identity;
 using WhatsAppPlatform.Application.WhatsAppAccounts.GetWhatsAppAccount;
 using WhatsAppPlatform.Domain.WhatsAppAccounts.Contracts;
 
@@ -6,7 +7,7 @@ namespace WhatsAppPlatform.Api.WhatsAppAccounts;
 internal static class GetWhatsAppAccountEndpoint
 {
     public static void MapGetWhatsAppAccount(this WebApplication app) =>
-        app.MapGet("/api/whatsapp-accounts/{whatsAppAccountId}", HandleAsync);
+        app.MapGet("/api/whatsapp-accounts/{whatsAppAccountId}", HandleAsync).RequireAuthorization().AddEndpointFilter<OrganizationAccessFilter>();
 
     private static async Task<IResult> HandleAsync(string whatsAppAccountId, GetWhatsAppAccountHandler handler, CancellationToken cancellationToken)
     {

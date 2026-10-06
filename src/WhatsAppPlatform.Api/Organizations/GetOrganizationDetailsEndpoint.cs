@@ -1,3 +1,4 @@
+using WhatsAppPlatform.Api.Identity;
 using WhatsAppPlatform.Application.Organizations.GetOrganizationDetails;
 using WhatsAppPlatform.Domain.Organizations.Contracts;
 
@@ -6,7 +7,7 @@ namespace WhatsAppPlatform.Api.Organizations;
 internal static class GetOrganizationDetailsEndpoint
 {
     public static void MapGetOrganizationDetails(this RouteGroupBuilder group) =>
-        group.MapGet("/{organizationId}", HandleAsync);
+        group.MapGet("/{organizationId}", HandleAsync).AddEndpointFilter<OrganizationAccessFilter>();
 
     private static async Task<IResult> HandleAsync(
         string organizationId, GetOrganizationDetailsHandler handler, CancellationToken cancellationToken)

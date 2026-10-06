@@ -1,3 +1,4 @@
+import { apiFetch } from "../auth/apiFetch";
 export interface Organization {
   organizationId: string;
   name: string;
@@ -32,7 +33,7 @@ function parseOrganization(value: unknown): Organization {
 
 async function readResponse(response: Response): Promise<unknown> {
   if (!response.ok) {
-    let message = response.status === 404 ? "Organization not found." : "The request failed. Please try again.";
+    let message = response.status === 403 ? "You do not have permission to perform this action." : response.status === 401 ? "Your session expired. Please sign in." : response.status === 404 ? "Organization not found." : "The request failed. Please try again.";
     if (response.status === 400) {
       message = "Please enter a valid organization name.";
       const body: unknown = await response.json().catch(() => undefined);
@@ -49,13 +50,13 @@ async function readResponse(response: Response): Promise<unknown> {
 }
 
 export async function listOrganizations(signal: AbortSignal): Promise<Organization[]> {
-  const body = await readResponse(await fetch("/api/organizations", { signal }));
+  const body = await readResponse(await apiFetch("/api/organizations", { signal }));
   if (!Array.isArray(body)) throw new Error("The server returned an invalid organizations list.");
   return body.map((item: unknown) => parseOrganization(item));
 }
 
 export async function createOrganization(name: string, signal: AbortSignal): Promise<Organization> {
-  const response = await fetch("/api/organizations", {
+  const response = await apiFetch("/api/organizations", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name }),
@@ -65,7 +66,7 @@ export async function createOrganization(name: string, signal: AbortSignal): Pro
 }
 
 export async function getOrganization(organizationId: string, signal: AbortSignal): Promise<Organization> {
-  const response = await fetch(`/api/organizations/${encodeURIComponent(organizationId)}`, { signal });
+  const response = await apiFetch(`/api/organizations/${encodeURIComponent(organizationId)}`, { signal });
   return parseOrganization(await readResponse(response));
 }
 

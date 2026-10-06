@@ -10,7 +10,7 @@ External Meta integration and other workflows remain future work.
 | Phone Number | WhatsApp Accounts | Independently addressable root identified by `PhoneNumberId`, referencing its `WhatsAppAccountId` and tenant; separate Meta phone-number identifier |
 | Messaging Account | WhatsApp Accounts | Minimal messaging/payment identity associated with a connected account; `MessagingAccountId`, `WhatsAppAccountId`, and `OrganizationId` references |
 | Credit Line Assignment | Billing | Small root identified by `CreditLineAssignmentId`, referencing customer `MessagingAccountId` and `OrganizationId`; records platform/Solution Partner credit-line association |
-| Platform user/membership | Identity | Future identity and authorization model; organization membership expressed by ID rather than embedding Organization |
+| Platform user/membership | Identity | Identity user uses UserId; OrganizationMembership is an independent entity with typed references and an organization-specific role |
 | Partner/platform configuration | Platform Administration | Future operator-owned settings for the platform or Solution Partner; no credentials in Domain |
 
 A WhatsApp Account and Messaging Account are distinct concepts even when Meta data
@@ -49,7 +49,7 @@ invoice model, or credit-line operation is implemented here.
 - Store internal primary keys as typed GUIDs/`uuid`. External Meta identifiers are separate provider references, not GUID substitutes or primary keys.
 - Keep Graph API payloads, tokens, transport errors, and provider-specific enums in Infrastructure adapters. Translate them at the boundary.
 - Persist UTC timestamps via `DateTimeOffset`; inject a clock for temporal rules.
-- Organization create/list/details and local WhatsApp Account onboarding records are implemented. No external Meta operations, updates/deletion, identity, credit-line assignment, billing, sending, or webhooks are implemented.
+- Organization create/list/details and local WhatsApp Account onboarding records are implemented. Identity authentication and organization authorization are implemented. No external Meta operations, updates/deletion, credit-line assignment, billing, sending, or webhooks are implemented.
 
 ## Implemented Organization aggregate
 
@@ -101,3 +101,19 @@ repeat the domain transition. Different data for that session returns a conflict
 external-ID uniqueness prevents reconnecting the same external entity to another root/tenant
 in this iteration. Transfer/reconnection policies and real Meta identifier rules must be
 reviewed when the real integration is designed.
+
+## Identity and organization authorization
+
+UserId and OrganizationMembershipId are internal nonempty typed UUIDs. ASP.NET Core Identity
+users/passwords/roles remain framework persistence concerns in Infrastructure. Domain has no
+Identity framework types, credentials, HTTP principals, or authentication cookies.
+OrganizationMembership contains Id, OrganizationId, UserId, Role, and UTC CreatedAt. It
+validates defined roles and UTC time; PostgreSQL enforces unique (OrganizationId, UserId)
+and Restrict FKs. Organization remains a separate aggregate with no membership collection.
+
+PlatformAdmin is a platform Identity role granting cross-organization administration.
+OrganizationAdmin grants administration of its own organization; Member grants read access.
+Application's access service reads the current user's membership for the requested organization.
+Authentication → Current User → PlatformAdmin? → platform access; otherwise membership →
+organization-scoped access. Anonymous contexts never receive admin or unrestricted list scope.
+See authentication.md for the endpoint matrix and deferred credential/operation protections.

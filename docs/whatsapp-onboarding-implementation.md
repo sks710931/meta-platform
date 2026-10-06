@@ -1,5 +1,7 @@
 # WhatsApp Accounts onboarding implementation
 
+Historical slice report; the current authentication and authorization rules are in [authentication.md](authentication.md).
+
 This iteration adds domain/persistence scaffolding and local state views only. No Meta HTTP
 calls, embedded browser signup, tokens, credit-line assignment, billing, sending, or webhooks
 are implemented. Organization stays unchanged as an aggregate; it has no account collections.

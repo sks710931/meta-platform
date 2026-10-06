@@ -1,3 +1,4 @@
+using WhatsAppPlatform.Domain.Identity.Contracts;
 using WhatsAppPlatform.Domain.Billing.Contracts;
 using WhatsAppPlatform.Domain.Organizations.Contracts;
 using WhatsAppPlatform.Domain.WhatsAppAccounts.Contracts;
@@ -10,6 +11,8 @@ public sealed class AggregateIdTests
     [Fact]
     public void Internal_ids_reject_empty_identifiers()
     {
+        Assert.Throws<ArgumentException>(() => new UserId(Guid.Empty));
+        Assert.Throws<ArgumentException>(() => new OrganizationMembershipId(Guid.Empty));
         Assert.Throws<ArgumentException>(() => new OrganizationId(Guid.Empty));
         Assert.Throws<ArgumentException>(() => new WhatsAppAccountId(Guid.Empty));
         Assert.Throws<ArgumentException>(() => new EmbeddedSignupSessionId(Guid.Empty));

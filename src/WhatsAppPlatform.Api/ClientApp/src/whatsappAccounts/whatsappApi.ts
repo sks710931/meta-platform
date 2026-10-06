@@ -1,3 +1,4 @@
+import { apiFetch } from "../auth/apiFetch";
 export interface PhoneNumberView { phoneNumberId: string; displayPhoneNumber: string; verifiedName: string | null; status: string }
 export interface AccountView { whatsAppAccountId: string; displayName: string; status: string; connectedAt: string | null; phoneNumbers: PhoneNumberView[] }
 export interface SessionView { sessionId: string; organizationId: string; status: "Pending" | "Completed" | "Failed" | "Expired"; startedAt: string; expiresAt: string; completedAt: string | null; manualCompletionAvailable: boolean }
@@ -36,7 +37,8 @@ function parseSession(value: unknown): SessionView {
 export class WhatsAppApiError extends Error {}
 async function body(response: Response): Promise<unknown> {
   if (!response.ok) {
-    const fallback = response.status >= 500 ? "The server could not process onboarding. Please retry."
+    const fallback = response.status === 403 ? "You do not have permission to perform this action."
+      : response.status === 401 ? "Your session expired. Please sign in." : response.status >= 500 ? "The server could not process onboarding. Please retry."
       : `Onboarding request failed (${response.status}). Refresh the session or start again.`;
     const raw: unknown = await response.json().catch(() => undefined);
     let message = fallback;
@@ -58,18 +60,18 @@ export function whatsappError(reason: unknown): string {
   return reason instanceof WhatsAppApiError ? reason.message : "Unable to reach onboarding. Please retry.";
 }
 export async function listAccounts(organizationId: string, signal: AbortSignal): Promise<AccountView[]> {
-  const value = await body(await fetch(`/api/organizations/${encodeURIComponent(organizationId)}/whatsapp-accounts`, { signal }));
+  const value = await body(await apiFetch(`/api/organizations/${encodeURIComponent(organizationId)}/whatsapp-accounts`, { signal }));
   if (!Array.isArray(value)) throw new Error("Invalid response.");
   return value.map((item: unknown) => parseAccount(item));
 }
 export async function startSession(organizationId: string, signal: AbortSignal): Promise<SessionView> {
-  return parseSession(await body(await fetch(`/api/organizations/${encodeURIComponent(organizationId)}/whatsapp/onboarding-sessions`, { method: "POST", signal })));
+  return parseSession(await body(await apiFetch(`/api/organizations/${encodeURIComponent(organizationId)}/whatsapp/onboarding-sessions`, { method: "POST", signal })));
 }
 export async function getSession(sessionId: string, signal: AbortSignal): Promise<SessionView> {
-  return parseSession(await body(await fetch(`/api/whatsapp/onboarding-sessions/${encodeURIComponent(sessionId)}`, { signal })));
+  return parseSession(await body(await apiFetch(`/api/whatsapp/onboarding-sessions/${encodeURIComponent(sessionId)}`, { signal })));
 }
 export async function completeSession(sessionId: string, input: CompletionInput, signal: AbortSignal): Promise<void> {
-  await body(await fetch(`/api/whatsapp/onboarding-sessions/${encodeURIComponent(sessionId)}/complete`, {
+  await body(await apiFetch(`/api/whatsapp/onboarding-sessions/${encodeURIComponent(sessionId)}/complete`, {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input), signal,
   }));
 }

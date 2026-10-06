@@ -1,4 +1,6 @@
 using WhatsAppPlatform.Infrastructure;
+using WhatsAppPlatform.Api.Identity;
+using WhatsAppPlatform.Infrastructure.Identity;
 using WhatsAppPlatform.Api.WhatsAppAccounts;
 using WhatsAppPlatform.Application.WhatsAppAccounts.StartOnboardingSession;
 using WhatsAppPlatform.Application.WhatsAppAccounts.GetOnboardingSession;
@@ -15,6 +17,7 @@ var connectionString = builder.Configuration.GetConnectionString("Platform")
     ?? throw new InvalidOperationException("Configure ConnectionStrings__Platform before starting the API.");
 
 builder.Services.AddInfrastructure(connectionString);
+builder.AddPlatformAuthentication();
 builder.Services.AddProblemDetails();
 builder.Services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadRequest = false);
 builder.Services.AddSingleton(TimeProvider.System);
@@ -32,10 +35,23 @@ builder.Services.AddScoped<GetWhatsAppAccountHandler>();
 
 var app = builder.Build();
 app.UseExceptionHandler();
+if (!app.Environment.IsDevelopment()) { app.UseHsts(); app.UseHttpsRedirection(); }
+app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseRateLimiter();
+app.UseMiddleware<AntiforgeryMiddleware>();
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    var provisioner = scope.ServiceProvider.GetRequiredService<BootstrapIdentityProvisioner>();
+    await provisioner.ProvisionAsync(app.Lifetime.ApplicationStopping);
+    if (app.Environment.IsDevelopment()) await provisioner.ProvisionDevelopmentMembershipAsync(app.Lifetime.ApplicationStopping);
+}
+app.MapAuthentication();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.MapGet("/health/live", () => Results.Ok(new { status = "alive" }));
-var organizations = app.MapGroup("/api/organizations");
+var organizations = app.MapGroup("/api/organizations").RequireAuthorization();
 organizations.MapCreateOrganization();
 organizations.MapListOrganizations();
 organizations.MapGetOrganizationDetails();

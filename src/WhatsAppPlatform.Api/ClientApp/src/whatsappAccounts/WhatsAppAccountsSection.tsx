@@ -1,9 +1,12 @@
+import { useCurrentUser } from "../auth/AuthenticationShell";
 import { useEffect, useRef, useState } from "react";
 import { listAccounts, startSession, whatsappError } from "./whatsappApi";
 import type { AccountView, SessionView } from "./whatsappApi";
 import { OnboardingSessionPanel } from "./OnboardingSessionPanel";
 
 export function WhatsAppAccountsSection({ organizationId }: { organizationId: string }) {
+  const user = useCurrentUser();
+  const canAdminister = user.isPlatformAdmin || user.organizations.some((org) => org.organizationId === organizationId && org.role === "OrganizationAdmin");
   const [accounts, setAccounts] = useState<AccountView[]>([]);
   const [session, setSession] = useState<SessionView | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,7 +35,7 @@ export function WhatsAppAccountsSection({ organizationId }: { organizationId: st
   return (
     <section>
       <h2>WhatsApp Accounts</h2>
-      <button disabled={connecting} onClick={() => { void connect(); }}>{connecting ? "Starting…" : "Connect WhatsApp Account"}</button>
+      {canAdminister && <button disabled={connecting} onClick={() => { void connect(); }}>{connecting ? "Starting…" : "Connect WhatsApp Account"}</button>}
       {connectError && <p role="alert">{connectError}</p>}
       {loading && <p role="status">Loading accounts…</p>}
       {error && <><p role="alert">{error}</p><button onClick={() => setAttempt(attempt + 1)}>Retry</button></>}

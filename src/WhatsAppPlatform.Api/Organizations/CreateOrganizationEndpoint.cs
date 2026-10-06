@@ -4,7 +4,7 @@ namespace WhatsAppPlatform.Api.Organizations;
 
 internal static class CreateOrganizationEndpoint
 {
-    public static void MapCreateOrganization(this RouteGroupBuilder group) => group.MapPost("", HandleAsync);
+    public static void MapCreateOrganization(this RouteGroupBuilder group) => group.MapPost("", HandleAsync).RequireAuthorization("PlatformAdmin");
 
     private static async Task<IResult> HandleAsync(
         CreateOrganizationRequest request, CreateOrganizationHandler handler, CancellationToken cancellationToken)

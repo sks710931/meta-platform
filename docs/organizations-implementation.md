@@ -1,5 +1,7 @@
 # Organizations implementation report
 
+Historical slice report; the current authentication and authorization rules are in [authentication.md](authentication.md).
+
 Only create, list, and details are implemented. No update/delete, membership, identity,
 authorization, Meta, WhatsApp, billing, or messaging functionality was added. The project
 structure is preserved. Shared changes are limited to composition, migration tooling,

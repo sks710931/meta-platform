@@ -1,3 +1,4 @@
+using WhatsAppPlatform.Api.Identity;
 using WhatsAppPlatform.Application.WhatsAppAccounts.RegisterOnboardingResult;
 using WhatsAppPlatform.Domain.WhatsAppAccounts.Contracts;
 
@@ -10,7 +11,7 @@ internal static class CompleteOnboardingEndpoint
         // TEMPORARY SCAFFOLDING: no completion route exists outside Development.
         // Replace with a trusted, validated Embedded Signup adapter when real integration is authorized.
         if (app.Environment.IsDevelopment())
-            app.MapPost("/api/whatsapp/onboarding-sessions/{sessionId}/complete", HandleAsync);
+            app.MapPost("/api/whatsapp/onboarding-sessions/{sessionId}/complete", HandleAsync).RequireAuthorization().AddEndpointFilter<OrganizationAccessFilter>().WithMetadata(new OrganizationAdministrationAccess());
     }
 
     private static async Task<IResult> HandleAsync(string sessionId, CompleteOnboardingRequest request,

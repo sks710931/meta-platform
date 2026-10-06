@@ -1,3 +1,4 @@
+using WhatsAppPlatform.Api.Identity;
 using WhatsAppPlatform.Application.WhatsAppAccounts.GetOnboardingSession;
 using WhatsAppPlatform.Domain.WhatsAppAccounts.Contracts;
 
@@ -6,7 +7,7 @@ namespace WhatsAppPlatform.Api.WhatsAppAccounts;
 internal static class GetOnboardingSessionEndpoint
 {
     public static void MapGetOnboardingSession(this WebApplication app) =>
-        app.MapGet("/api/whatsapp/onboarding-sessions/{sessionId}", HandleAsync);
+        app.MapGet("/api/whatsapp/onboarding-sessions/{sessionId}", HandleAsync).RequireAuthorization().AddEndpointFilter<OrganizationAccessFilter>();
 
     private static async Task<IResult> HandleAsync(string sessionId, GetOnboardingSessionHandler handler,
         IHostEnvironment environment, CancellationToken cancellationToken)

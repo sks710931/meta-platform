@@ -14,8 +14,9 @@ internal sealed class EfOrganizationStore(PlatformDbContext context) : IOrganiza
         await context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Organization>> ListNewestFirstAsync(CancellationToken cancellationToken) =>
+    public async Task<IReadOnlyList<Organization>> ListNewestFirstAsync(IReadOnlyList<OrganizationId>? accessibleIds, CancellationToken cancellationToken) =>
         await context.Set<Organization>().AsNoTracking()
+            .Where(organization => accessibleIds == null || accessibleIds.Contains(organization.Id))
             .OrderByDescending(organization => organization.CreatedAt)
             .ThenByDescending(organization => organization.Id)
             .ToListAsync(cancellationToken);
