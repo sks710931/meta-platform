@@ -117,3 +117,9 @@ Application's access service reads the current user's membership for the request
 Authentication → Current User → PlatformAdmin? → platform access; otherwise membership →
 organization-scoped access. Anonymous contexts never receive admin or unrestricted list scope.
 See authentication.md for the endpoint matrix and deferred credential/operation protections.
+
+## MessagingAccount provider mapping
+
+Real Meta Embedded Signup remains deferred pending verification of current official v4
+contracts and the existing separate messaging/payment identifier. No domain meaning was
+changed and no Meta API was guessed. See [contract verification blocker](meta-embedded-signup-contract-review.md).

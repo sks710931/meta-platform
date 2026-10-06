@@ -182,3 +182,9 @@ lookups resolve OrganizationId from persisted ownership before reading or mutati
 
 Future Meta credentials, WhatsApp operations, messaging, templates, billing, and credit-line
 operations must use this same organization authorization boundary. No such features are added.
+
+## Meta Embedded Signup integration
+
+Real Meta Embedded Signup remains deferred pending verification of current official v4
+contracts and the existing separate messaging/payment identifier. No domain meaning was
+changed and no Meta API was guessed. See [contract verification blocker](meta-embedded-signup-contract-review.md).

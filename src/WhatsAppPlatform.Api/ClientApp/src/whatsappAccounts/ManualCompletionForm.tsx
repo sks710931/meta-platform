@@ -33,10 +33,10 @@ export function ManualCompletionForm({ sessionId, onCompleted }: Props) {
       <h4>Development-only manual completion</h4>
       <p>Simulate a successful signup using test identifiers. This does not connect to Meta.</p>
       <fieldset disabled={saving}>
-        <label>External WhatsApp account ID<input required pattern="[1-9][0-9]*" maxLength={100} value={accountId} onChange={(e) => setAccountId(e.target.value)} /></label>
-        <label>External messaging account ID<input required pattern="[1-9][0-9]*" maxLength={100} value={messagingId} onChange={(e) => setMessagingId(e.target.value)} /></label>
+        <label>External WhatsApp account ID<input required maxLength={100} value={accountId} onChange={(e) => setAccountId(e.target.value)} /></label>
+        <label>External messaging account ID<input required maxLength={100} value={messagingId} onChange={(e) => setMessagingId(e.target.value)} /></label>
         <label>Display name (optional)<input maxLength={200} value={displayName} onChange={(e) => setDisplayName(e.target.value)} /></label>
-        <label>External phone number ID<input required pattern="[1-9][0-9]*" maxLength={100} value={phoneId} onChange={(e) => setPhoneId(e.target.value)} /></label>
+        <label>External phone number ID<input required maxLength={100} value={phoneId} onChange={(e) => setPhoneId(e.target.value)} /></label>
         <label>Display phone number<input required maxLength={50} value={displayPhone} onChange={(e) => setDisplayPhone(e.target.value)} /></label>
         <label>Verified name (optional)<input maxLength={200} value={verifiedName} onChange={(e) => setVerifiedName(e.target.value)} /></label>
         <button type="submit">{saving ? "Completing…" : "Simulate successful signup"}</button>
