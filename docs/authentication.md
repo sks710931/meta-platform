@@ -1,7 +1,7 @@
 # Authentication and tenant authorization
 
 This is a cross-cutting security slice across Identity, Organizations listing, and the
-HTTP boundary of existing WhatsApp Accounts use cases. No Meta integration is implemented.
+HTTP boundary of existing WhatsApp Accounts use cases. Real Meta Embedded Signup now reuses these same security boundaries.
 
 ## Architecture
 
@@ -137,3 +137,14 @@ Role revocation can take up to five minutes. MFA, reset, email verification, reg
 invitations, account/session administration, and distributed brute-force controls are deferred.
 Future authorization must protect Meta credentials, WhatsApp operations, messaging, templates,
 billing, and credit-line operations. No sensitive Meta credentials exist in this iteration.
+
+## Meta completion authorization
+
+GET `/api/whatsapp/embedded-signup/configuration` requires authentication and returns only
+public, allowlisted values. POST `/api/whatsapp/onboarding-sessions/{sessionId}/meta-complete`
+uses the existing OrganizationAccessFilter and administration metadata: stored session ownership,
+OrganizationAdmin/PlatformAdmin, and antiforgery. Unknown request fields are rejected; clients
+cannot assert OrganizationId ownership. Another tenant gets 404; own-tenant Member gets 403;
+anonymous gets 401. Development manual completion retains the same protection and stays absent
+outside Development. See [Meta implementation](meta-embedded-signup.md) for credential/key-ring
+configuration and secret logging restrictions.

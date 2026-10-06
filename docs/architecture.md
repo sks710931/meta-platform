@@ -1,6 +1,6 @@
 # Architecture
 
-The bootstrap, Organization reads/creation, local WhatsApp onboarding model, and Identity security slice are implemented. External integrations remain deferred.
+The bootstrap, Organization reads/creation, local WhatsApp onboarding model, and Identity security slice are implemented. Customer Meta Embedded Signup v4 is implemented; other external workflows remain deferred.
 
 ## Why a modular monolith
 
@@ -22,7 +22,7 @@ flowchart TD
 
 - **Domain**: framework-free rules, small aggregates, typed identifiers, and explicit context contracts. No EF, ASP.NET, Npgsql, or Meta dependencies.
 - **Application**: use cases grouped as vertical slices inside their bounded context. Depends only on Domain; define narrow persistence/integration ports only when a use case needs them.
-- **Infrastructure**: EF Core/Npgsql persistence and future adapters implementing Application ports. Owns external wire models and their translation.
+- **Infrastructure**: EF Core/Npgsql persistence and provider adapters implementing Application ports. Owns external wire models and their translation.
 - **API**: request parsing, HTTP responses, and dependency composition. Its Infrastructure reference wires implementations; controllers/handlers must not contain business rules.
 - **React**: delivery/UI code within `src/WhatsAppPlatform.Api/ClientApp`. Strict TypeScript; no business rules duplicated in components.
 
@@ -148,9 +148,8 @@ return the existing account. Conflicting callbacks return 409; expired sessions 
 The completion HTTP contract is **temporary scaffolding**, mapped only in Development.
 Session responses expose a runtime manualCompletionAvailable flag so built React assets do
 not show a manual form in Production. Unknown completion fields are rejected, and DTOs have
-no credential fields. No Meta HTTP adapter, SDK, embedded browser signup, or secret storage
-exists. Replace this route with a trusted real Embedded Signup adapter later; do not treat
-simulation data as proof of a real connection. All existing business endpoints now require
+no credential fields. This manual route remains local scaffolding beside the real
+`meta-complete` route; do not treat simulation data as proof of a real connection. All existing business endpoints now require
 authentication; onboarding writes require OrganizationAdmin or PlatformAdmin.
 
 Session lifetime defaults to 15 minutes via WhatsAppOnboarding:SessionLifetimeMinutes and is
@@ -185,6 +184,13 @@ operations must use this same organization authorization boundary. No such featu
 
 ## Meta Embedded Signup integration
 
-Real Meta Embedded Signup remains deferred pending verification of current official v4
-contracts and the existing separate messaging/payment identifier. No domain meaning was
-changed and no Meta API was guessed. See [contract verification blocker](meta-embedded-signup-contract-review.md).
+React owns a typed SDK wrapper; API exposes allowlisted public configuration and an authenticated
+completion route with existing stored-ownership, admin, and antiforgery enforcement. Application
+coordinates exchange/checkpoint/discovery/reused atomic registration through narrow ports.
+Infrastructure owns Graph JSON, HttpClient, protected credential storage, and PostgreSQL attempt
+locking. No token, SDK, transport model, or provider HTTP type enters Domain.
+
+The approved account-model adjustment keeps the internal tenant connection root, defers the
+unavailable external WAAC identity, and puts verified `waba_id` on MessagingAccount. Current
+Meta docs describe a beta phased model; no separate unavailable identity/API is invented.
+See [implementation and verification](meta-embedded-signup.md) and [official contracts](meta-embedded-signup-contract-review.md).

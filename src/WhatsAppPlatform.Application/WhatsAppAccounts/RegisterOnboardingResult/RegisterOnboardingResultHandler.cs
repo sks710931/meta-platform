@@ -4,7 +4,7 @@ using WhatsAppPlatform.Domain.WhatsAppAccounts.Contracts;
 
 namespace WhatsAppPlatform.Application.WhatsAppAccounts.RegisterOnboardingResult;
 
-// Temporary manual completion use case. Replaced by a validated external signup adapter later.
+// Shared atomic account registration: inputs come from Development simulation or verified provider discovery.
 public sealed class RegisterOnboardingResultHandler(IWhatsAppAccountStore store, TimeProvider clock)
 {
     public async Task<OnboardingResult<RegistrationResponse>> HandleAsync(

@@ -1,4 +1,5 @@
 using System.Threading.RateLimiting;
+using System.Security.Cryptography.X509Certificates;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -20,6 +21,16 @@ internal static class IdentityRegistration
         if (!string.IsNullOrWhiteSpace(keyDirectory)) protection.PersistKeysToFileSystem(new DirectoryInfo(keyDirectory));
         else if (!builder.Environment.IsDevelopment())
             throw new InvalidOperationException("Configure DataProtection__KeyDirectory for a protected persistent key ring outside Development.");
+        var metaEnabled = new[] { "AppId", "AppSecret", "EmbeddedSignupConfigurationId", "GraphApiVersion" }
+            .Any(key => !string.IsNullOrEmpty(builder.Configuration[$"Meta:{key}"]));
+        if (metaEnabled && string.IsNullOrWhiteSpace(keyDirectory))
+            throw new InvalidOperationException("Real Meta onboarding requires a persistent DataProtection__KeyDirectory, including Development.");
+        var certificatePath = builder.Configuration["DataProtection:CertificatePath"];
+        if (!string.IsNullOrWhiteSpace(certificatePath))
+            protection.ProtectKeysWithCertificate(X509CertificateLoader.LoadPkcs12FromFile(certificatePath,
+                builder.Configuration["DataProtection:CertificatePassword"]));
+        else if (metaEnabled && !builder.Environment.IsDevelopment())
+            throw new InvalidOperationException("Real Meta onboarding outside Development requires DataProtection__CertificatePath to encrypt the persisted key ring.");
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
         builder.Services.AddScoped<IOrganizationAccessService, OrganizationAccessService>();

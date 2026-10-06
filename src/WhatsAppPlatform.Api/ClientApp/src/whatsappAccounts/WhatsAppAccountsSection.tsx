@@ -1,12 +1,18 @@
+import { getMetaConfiguration } from "../meta/metaApi";
+import { prepareEmbeddedSignup, EmbeddedSignupError } from "../meta/embeddedSignup";
+import type { MetaSignupConfiguration } from "../meta/embeddedSignup";
+import { MetaSignupControls } from "../meta/MetaSignupControls";
 import { useCurrentUser } from "../auth/AuthenticationShell";
 import { useEffect, useRef, useState } from "react";
-import { listAccounts, startSession, whatsappError } from "./whatsappApi";
+import { listAccounts, startSession, getSession, whatsappError } from "./whatsappApi";
 import type { AccountView, SessionView } from "./whatsappApi";
 import { OnboardingSessionPanel } from "./OnboardingSessionPanel";
 
 export function WhatsAppAccountsSection({ organizationId }: { organizationId: string }) {
   const user = useCurrentUser();
   const canAdminister = user.isPlatformAdmin || user.organizations.some((org) => org.organizationId === organizationId && org.role === "OrganizationAdmin");
+  const [meta, setMeta] = useState<MetaSignupConfiguration | null>(null);
+  const [metaReady, setMetaReady] = useState(false);
   const [accounts, setAccounts] = useState<AccountView[]>([]);
   const [session, setSession] = useState<SessionView | null>(null);
   const [loading, setLoading] = useState(true);
@@ -25,6 +31,21 @@ export function WhatsAppAccountsSection({ organizationId }: { organizationId: st
     return () => controller.abort();
   }, [organizationId, attempt]);
 
+  useEffect(() => {
+    const controller = new AbortController();
+    getMetaConfiguration(controller.signal).then(async (config) => {
+      if (controller.signal.aborted) return;
+      if (config) await prepareEmbeddedSignup(config);
+      if (!controller.signal.aborted) { setMeta(config); setMetaReady(true); }
+    }).catch((reason: unknown) => {
+      if (!controller.signal.aborted) {
+        setConnectError(reason instanceof EmbeddedSignupError ? reason.message : "Unable to prepare Meta signup. Refresh to retry; Development manual fallback remains available.");
+        setMetaReady(true);
+      }
+    });
+    return () => controller.abort();
+  }, []);
+
   async function connect(): Promise<void> {
     const controller = new AbortController(); pending.current?.abort(); pending.current = controller;
     setConnecting(true); setConnectError(null);
@@ -35,7 +56,7 @@ export function WhatsAppAccountsSection({ organizationId }: { organizationId: st
   return (
     <section>
       <h2>WhatsApp Accounts</h2>
-      {canAdminister && <button disabled={connecting} onClick={() => { void connect(); }}>{connecting ? "Starting…" : "Connect WhatsApp Account"}</button>}
+      {canAdminister && <button disabled={connecting || !metaReady} onClick={() => { void connect(); }}>{connecting ? "Starting…" : "Connect WhatsApp Account"}</button>}
       {connectError && <p role="alert">{connectError}</p>}
       {loading && <p role="status">Loading accounts…</p>}
       {error && <><p role="alert">{error}</p><button onClick={() => setAttempt(attempt + 1)}>Retry</button></>}
@@ -46,6 +67,14 @@ export function WhatsAppAccountsSection({ organizationId }: { organizationId: st
           <ul>{account.phoneNumbers.map((phone) => <li key={phone.phoneNumberId}>{phone.displayPhoneNumber}{phone.verifiedName ? ` — ${phone.verifiedName}` : ""} ({phone.status})</li>)}</ul>
         </article>
       )))}
+      {session?.status === "Pending" && meta && <MetaSignupControls key={session.sessionId} sessionId={session.sessionId} configuration={meta}
+        onCompleted={() => {
+          setAttempt((value) => value + 1);
+          const controller = new AbortController(); pending.current = controller;
+          void getSession(session.sessionId, controller.signal).then((updated) => {
+            if (!controller.signal.aborted) setSession(updated);
+          }).catch((reason: unknown) => { if (!controller.signal.aborted) setConnectError(whatsappError(reason)); });
+        }} />}
       {session && <OnboardingSessionPanel key={session.sessionId} session={session} onSession={setSession}
         onAccountsChanged={() => setAttempt((value) => value + 1)} />}
     </section>

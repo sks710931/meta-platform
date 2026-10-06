@@ -1,4 +1,5 @@
 using WhatsAppPlatform.Infrastructure;
+using WhatsAppPlatform.Infrastructure.Meta;
 using WhatsAppPlatform.Api.Identity;
 using WhatsAppPlatform.Infrastructure.Identity;
 using WhatsAppPlatform.Api.WhatsAppAccounts;
@@ -18,6 +19,7 @@ var connectionString = builder.Configuration.GetConnectionString("Platform")
 
 builder.Services.AddInfrastructure(connectionString);
 builder.AddPlatformAuthentication();
+builder.Services.AddMetaEmbeddedSignup(builder.Configuration);
 builder.Services.AddProblemDetails();
 builder.Services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadRequest = false);
 builder.Services.AddSingleton(TimeProvider.System);
@@ -58,6 +60,8 @@ organizations.MapGetOrganizationDetails();
 app.MapStartOnboardingSession();
 app.MapGetOnboardingSession();
 app.MapDevelopmentOnlyCompletion();
+app.MapMetaCompletion();
+app.MapMetaSignupConfiguration();
 app.MapListWhatsAppAccounts();
 app.MapGetWhatsAppAccount();
 app.MapFallback("/api/{**path}", () => Results.NotFound());

@@ -45,3 +45,22 @@ These require real HTTP cookies/antiforgery and PostgreSQL; do not substitute fr
 - Absolute session deadline, security-stamp/password/role revocation, and membership removal
   take effect as documented; logout removes cookies and expired sessions return the UI to login.
 - No hashes, stamps, password/token/cookie values appear in responses or diagnostic logs.
+
+## Real Meta signup/security scenarios
+
+Use an approved Meta test app/customer and isolated HTTP/PostgreSQL deployment, not SDK mocks.
+
+- Confirm current v4 configuration, allowed HTTPS origins, user cancellation/final-screen closure,
+  code TTL, actual business-token scope/expiry shape, and phased Messaging Account rollout.
+- Tampered browser fields are rejected; code from the wrong app, insufficient scopes,
+  unrestricted/multiple targets, and inaccessible account/phone resources fail closed.
+- Real/meta and Development completion require authentication, stored tenant ownership, admin
+  role, and CSRF; cross-tenant session IDs reveal no existence or credentials.
+- Encrypted storage survives restart/replicas with the protected key ring; session-swapped
+  ciphertext fails; responses, SDK console, HTTP client logs, proxies, and APM reveal no secrets.
+- Concurrent submissions exchange only once; lost responses replay server state; crashes before
+  and after reservation/exchange/checkpoint/discovery have the documented restart/retry behavior.
+- Account graph conflicts roll back registration while retaining the recoverable credential;
+  no duplicate credential/session, messaging, account, or phone identity is inserted.
+- Real accounts with absent WAAC identifiers round-trip through EF and remain tenant-owned;
+  existing manual/legacy records are not falsely interpreted as verified WAAC identities.

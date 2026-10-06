@@ -26,7 +26,7 @@ internal sealed class WhatsAppAccountConfiguration : IEntityTypeConfiguration<Wh
         builder.Property(account => account.SignupSessionId).HasColumnName("signup_session_id").HasColumnType("uuid")
             .HasConversion(id => id.Value, value => new EmbeddedSignupSessionId(value));
         builder.Property(account => account.ExternalWhatsAppAccountId).HasColumnName("external_whatsapp_account_id").HasMaxLength(100)
-            .HasConversion(id => id.Value, value => RestoreExternalId(value));
+            .HasConversion(id => id!.Value, value => RestoreExternalId(value)).IsRequired(false);
         builder.Property(account => account.DisplayName).HasColumnName("display_name").HasMaxLength(200);
         builder.Property(account => account.Status).HasColumnName("status").HasConversion<string>().HasMaxLength(20);
         builder.Property(account => account.CreatedAt).HasColumnName("created_at").HasColumnType("timestamp with time zone");

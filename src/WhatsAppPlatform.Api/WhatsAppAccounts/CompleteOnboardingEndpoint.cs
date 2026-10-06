@@ -18,6 +18,8 @@ internal static class CompleteOnboardingEndpoint
         RegisterOnboardingResultHandler handler, CancellationToken cancellationToken)
     {
         if (!OnboardingHttpResults.TryIdentifier(sessionId, out var value)) return OnboardingHttpResults.InvalidIdentifier("sessionId");
+        if (request.ExternalWhatsAppAccountId is null)
+            return Results.ValidationProblem(new Dictionary<string, string[]> { ["externalWhatsAppAccountId"] = ["External account identifier is required for manual completion."] });
         var result = await handler.HandleAsync(new EmbeddedSignupSessionId(value), request.ToInput(), cancellationToken);
         if (result.Value is null) return OnboardingHttpResults.Error(result.Error, result.Message);
         return result.Value.AlreadyCompleted ? Results.Ok(result.Value)

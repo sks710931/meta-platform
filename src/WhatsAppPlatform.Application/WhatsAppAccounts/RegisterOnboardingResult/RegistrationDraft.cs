@@ -8,8 +8,10 @@ internal static class RegistrationDraft
 {
     public static RegisteredAccount? Create(EmbeddedSignupSession session, RegisterOnboardingInput input, DateTimeOffset now)
     {
-        if (!ExternalWhatsAppAccountId.TryCreate(input.ExternalWhatsAppAccountId, out var externalAccountId) || externalAccountId is null ||
-            !ExternalMessagingAccountId.TryCreate(input.ExternalMessagingAccountId, out var externalMessagingId) || externalMessagingId is null ||
+        ExternalWhatsAppAccountId? externalAccountId = null;
+        if (input.ExternalWhatsAppAccountId is not null &&
+            !ExternalWhatsAppAccountId.TryCreate(input.ExternalWhatsAppAccountId, out externalAccountId)) return null;
+        if (!ExternalMessagingAccountId.TryCreate(input.ExternalMessagingAccountId, out var externalMessagingId) || externalMessagingId is null ||
             input.PhoneNumbers is null || input.PhoneNumbers.Count is < 1 or > 100) return null;
         var accountId = new WhatsAppAccountId(Guid.NewGuid());
         if (!WhatsAppAccount.TryCreateConnected(accountId, session.OrganizationId, session.Id,

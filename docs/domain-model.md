@@ -1,12 +1,12 @@
 # Domain model
 
 This describes intended ownership and boundaries. Organization creation/reads and the WhatsApp Accounts onboarding model are implemented.
-External Meta integration and other workflows remain future work.
+Customer Meta Embedded Signup v4 is implemented; other workflows remain future work.
 
 | Term | Owner | Intended boundary and references |
 | --- | --- | --- |
 | Organization | Organizations | Customer/tenant root identified by `OrganizationId`; no collection of WhatsApp accounts |
-| WhatsApp Account | WhatsApp Accounts | Small root identified by `WhatsAppAccountId`, referencing `OrganizationId`; separate external Meta WABA identifier |
+| WhatsApp Account | WhatsApp Accounts | Small root identified by `WhatsAppAccountId`, referencing `OrganizationId`; optional separate external WAAC identity; local connection root |
 | Phone Number | WhatsApp Accounts | Independently addressable root identified by `PhoneNumberId`, referencing its `WhatsAppAccountId` and tenant; separate Meta phone-number identifier |
 | Messaging Account | WhatsApp Accounts | Minimal messaging/payment identity associated with a connected account; `MessagingAccountId`, `WhatsAppAccountId`, and `OrganizationId` references |
 | Credit Line Assignment | Billing | Small root identified by `CreditLineAssignmentId`, referencing customer `MessagingAccountId` and `OrganizationId`; records platform/Solution Partner credit-line association |
@@ -67,22 +67,23 @@ The aggregate contains no external identifiers, memberships, or connected-accoun
 
 ## WhatsApp Accounts onboarding model
 
-- **WhatsAppAccount**: typed internal Id, OrganizationId, SignupSessionId, typed external WABA ID, normalized DisplayName, Status, CreatedAt, ConnectedAt. New successful registrations are Connected; Pending/Suspended/Disconnected are defined but no transitions are exposed. SignupSessionId is an integrity/replay link, not a large aggregate graph.
-- **MessagingAccount**: internal MessagingAccountId, WhatsAppAccountId, typed external messaging/payment ID, CreatedAt. This metadata entity is owned by WhatsApp Accounts, not the future message-sending context. Its internal ID contract is owned by WhatsAppAccounts.Contracts; Messaging remains reserved for future conversations, messages, outbound messages, and delivery status.
+- **WhatsAppAccount**: typed internal Id, OrganizationId, SignupSessionId, optional typed external WAAC ID, normalized DisplayName, Status, CreatedAt, ConnectedAt. New successful registrations are Connected; Pending/Suspended/Disconnected are defined but no transitions are exposed. SignupSessionId is an integrity/replay link, not a large aggregate graph.
+- **MessagingAccount**: internal MessagingAccountId, WhatsAppAccountId, typed external messaging/payment ID (current Meta `waba_id`), CreatedAt. This metadata entity is owned by WhatsApp Accounts, not the future message-sending context. Its internal ID contract is owned by WhatsAppAccounts.Contracts; Messaging remains reserved for future conversations, messages, outbound messages, and delivery status.
 - **PhoneNumber**: internal PhoneNumberId, WhatsAppAccountId, typed external phone ID, trimmed DisplayPhoneNumber, optional trimmed VerifiedName, local Registered status, CreatedAt. Registered means locally recorded; it does not assert Meta provisioning/verification.
 - **EmbeddedSignupSession**: typed internal Id, OrganizationId, Status, StartedAt, ExpiresAt, optional CompletedAt. It is an independent aggregate. There are no tokens, authorization codes, secrets, or Organization navigation collections.
 
 All internal IDs remain UUIDs. External identifiers are distinct value objects containing
 opaque, non-whitespace values of at most 100 Unicode characters, with valid Unicode and no control characters. They are never aggregate
 primary keys. Account names preserve case, normalize whitespace, and have a 200-character
-limit; absent names fall back to the external WABA ID. Phone displays are nonempty with a
+limit; manual names can fall back to a supplied external account ID, while real discovery
+supplies the authoritative name or Messaging Account ID. Phone displays are nonempty with a
 50-character limit; verified names are optional with a 200-character limit. Timestamps are UTC.
 
 ```text
 Organization (ID reference only)
     ↓ Start Embedded Signup Session
 Pending
-    ↓ External onboarding succeeds (currently simulated locally)
+    ↓ External onboarding succeeds (real Meta or Development simulation)
 Register account result
     ↓ WhatsAppAccount created
     ↓ MessagingAccount created
@@ -116,10 +117,19 @@ OrganizationAdmin grants administration of its own organization; Member grants r
 Application's access service reads the current user's membership for the requested organization.
 Authentication → Current User → PlatformAdmin? → platform access; otherwise membership →
 organization-scoped access. Anonymous contexts never receive admin or unrestricted list scope.
-See authentication.md for the endpoint matrix and deferred credential/operation protections.
+See authentication.md for the endpoint matrix and authorization and deferred operation protections.
 
 ## MessagingAccount provider mapping
 
-Real Meta Embedded Signup remains deferred pending verification of current official v4
-contracts and the existing separate messaging/payment identifier. No domain meaning was
-changed and no Meta API was guessed. See [contract verification blocker](meta-embedded-signup-contract-review.md).
+Official Meta documentation exposes the current Messaging Account via `waba_id`, while the
+separate WAAC ID is deferred to Phase 2 (planned H1 2027; beta and subject to change). The user
+approved making ExternalWhatsAppAccountId optional. The internal WhatsAppAccount remains the
+local tenant connection root grouping discovered phone records; it does not claim to mirror
+Meta's new one-phone-per-WAAC hierarchy. No fake WAAC identity is constructed.
+
+Real registration uses server-verified Messaging Account and phone identifiers. Existing
+manual fields remain Development simulation values; no existing data is reinterpreted or used
+as authoritative provider discovery. Domain remains free of credentials and Meta transport types.
+Customer credentials are separately protected Infrastructure records associated with sessions.
+Connected and Registered assert local account persistence, not messaging readiness.
+See [sequence and credential boundaries](meta-embedded-signup.md) and [official contracts](meta-embedded-signup-contract-review.md).

@@ -33,6 +33,16 @@ public sealed class WhatsAppAccountTests
     }
 
     [Fact]
+    public void Local_connection_can_defer_provider_waac_identity_without_losing_ownership()
+    {
+        Assert.True(WhatsAppAccount.TryCreateConnected(Id, OrganizationId, SessionId, null, "Messaging account", Now, out var account));
+        Assert.NotNull(account);
+        Assert.Null(account.ExternalWhatsAppAccountId);
+        Assert.Equal(OrganizationId, account.OrganizationId);
+        Assert.False(WhatsAppAccount.TryCreateConnected(Id, OrganizationId, SessionId, null, " ", Now, out _));
+    }
+
+    [Fact]
     public void Invalid_account_name_or_non_utc_time_is_rejected()
     {
         Assert.False(WhatsAppAccount.TryCreateConnected(Id, OrganizationId, SessionId, ExternalId(), new string('x', 201), Now, out _));

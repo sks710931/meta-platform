@@ -1,6 +1,6 @@
 namespace WhatsAppPlatform.Application.WhatsAppAccounts.RegisterOnboardingResult;
 
-// Temporary simulation input, NOT a Meta Graph/Embedded Signup wire DTO. No credential fields.
+// Application registration contract, NOT a Meta transport DTO. No credentials; null WAAC identity is deferred.
 public sealed record RegisterPhoneInput(string? ExternalPhoneNumberId, string? DisplayPhoneNumber, string? VerifiedName);
 public sealed record RegisterOnboardingInput(string? ExternalWhatsAppAccountId, string? ExternalMessagingAccountId,
     string? DisplayName, IReadOnlyList<RegisterPhoneInput?>? PhoneNumbers);

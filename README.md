@@ -2,7 +2,7 @@
 
 A modular SaaS foundation for managing multiple WhatsApp Business accounts and attributing
 Meta billing under a shared partner credit line. Organizations supports create, list, and details.
-WhatsApp Accounts supports local onboarding sessions and account records. No Meta integration is implemented.
+WhatsApp Accounts supports local onboarding sessions, account records, and real Meta Embedded Signup v4.
 
 ## Prerequisites
 
@@ -171,8 +171,7 @@ completion payload, and exact test list, see [onboarding report](docs/whatsapp-o
 
 Testing remains limited to small deterministic unit tests run through `dotnet test`.
 Persistence and concurrency checks are documented as [future integration scenarios](docs/future-integration-tests.md),
-without introducing integration-test infrastructure. No Meta calls, credit-line assignment,
-billing, sending, or webhooks are implemented.
+without introducing integration-test infrastructure. No credit-line assignment, billing, sending, or webhooks are implemented.
 
 ## Authentication setup
 
@@ -185,3 +184,12 @@ is created. See [authentication architecture and endpoint rules](docs/authentica
 For explicit local membership fixtures only, set DevelopmentMember__Email, __Password,
 __OrganizationId, and __Role (Member or OrganizationAdmin). The organization must exist;
 restart the Development host to provision the fixture idempotently. There is no membership API.
+
+## Real Meta Embedded Signup v4
+
+Apply the Meta credential migration and configure the four `Meta__*` values from secret/configuration
+storage. Real signup requires persistent Data Protection keys; Production also requires key-encryption
+certificate configuration. AppSecret never reaches React. The customer flow uses only the two WhatsApp
+permissions and leaves partner credit-line credentials separate. Connect starts a session; Continue
+with Meta opens the popup; Retry saved result recovers a persisted checkpoint without reusing a code.
+See [deployment, API contracts, verification, and limitations](docs/meta-embedded-signup.md).

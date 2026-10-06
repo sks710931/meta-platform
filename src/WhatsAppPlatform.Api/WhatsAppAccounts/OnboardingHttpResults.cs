@@ -13,6 +13,11 @@ internal static class OnboardingHttpResults
         OnboardingError.NotFound => Results.Problem(statusCode: 404, title: "Not found", detail: message),
         OnboardingError.Conflict => Results.Problem(statusCode: 409, title: "Onboarding conflict", detail: message),
         OnboardingError.Expired => Results.Problem(statusCode: 410, title: "Session expired", detail: message),
+        OnboardingError.Disabled => Results.Problem(statusCode: 503, title: "Meta onboarding unavailable", detail: message),
+        OnboardingError.RestartRequired => Results.Problem(statusCode: 409, title: "Restart signup required", detail: message,
+            extensions: new Dictionary<string, object?> { ["onboardingError"] = "restart_required" }),
+        OnboardingError.ProviderUnavailable => Results.Problem(statusCode: 503, title: "Meta temporarily unavailable", detail: message),
+        OnboardingError.ProviderRejected => Results.Problem(statusCode: 422, title: "Meta resource verification failed", detail: message),
         _ => throw new InvalidOperationException("Missing onboarding result.")
     };
 }

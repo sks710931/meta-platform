@@ -27,10 +27,10 @@ export function OnboardingSessionPanel({ session, onSession, onAccountsChanged }
       <button disabled={loading} onClick={() => { void refresh(); }}>{loading ? "Refreshing…" : "Refresh session"}</button>
       {error && <p role="alert">{error}</p>}
       {session.status === "Pending" && session.manualCompletionAvailable && (
-        <ManualCompletionForm key={session.sessionId} sessionId={session.sessionId}
-          onCompleted={() => { onAccountsChanged(); void refresh(); }} />
+        <details><summary>Development manual fallback</summary><ManualCompletionForm key={session.sessionId} sessionId={session.sessionId}
+          onCompleted={() => { onAccountsChanged(); void refresh(); }} /></details>
       )}
-      {!session.manualCompletionAvailable && session.status === "Pending" && <p>Manual completion is unavailable. Real Embedded Signup is not integrated yet.</p>}
+      {!session.manualCompletionAvailable && session.status === "Pending" && <p>Manual completion is unavailable. Continue with Meta above when signup is configured.</p>}
     </section>
   );
 }

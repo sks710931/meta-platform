@@ -1,6 +1,6 @@
 namespace WhatsAppPlatform.Application.WhatsAppAccounts.Contracts;
 
-public enum OnboardingError { Invalid, NotFound, Conflict, Expired }
+public enum OnboardingError { Invalid, NotFound, Conflict, Expired, Disabled, RestartRequired, ProviderUnavailable, ProviderRejected }
 
 public sealed class OnboardingResult<T>
 {
